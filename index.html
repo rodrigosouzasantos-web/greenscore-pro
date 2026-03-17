@@ -2918,16 +2918,18 @@ async function liveRun(){
 
   try{
     const today=new Date().toISOString().split('T')[0];
-    // allorigins.win busca a URL por nós — embutimos a key no header via URL customizada
-    // football-data.org aceita X-Auth-Token como query param também
-    const apiUrl=`https://api.football-data.org/v4/matches?status=IN_PLAY,PAUSED&dateFrom=${today}&dateTo=${today}`;
-    // Usa proxy que funciona com file:// — passa key como query param na URL destino
-    const destUrl=`${apiUrl}&X-Auth-Token=${apiKey}`;
-    const proxyUrl=`https://api.allorigins.win/raw?url=${encodeURIComponent(destUrl)}`;
-    const res=await fetch(proxyUrl);
+    const res=await fetch(
+      `https://api.football-data.org/v4/matches?status=IN_PLAY,PAUSED&dateFrom=${today}&dateTo=${today}`,
+      {headers:{'X-Auth-Token':apiKey}}
+    );
+
+    // Loga resposta completa para diagnóstico
+    console.log('Live API status:', res.status, res.statusText);
+    console.log('Live API headers:', [...res.headers.entries()]);
 
     if(!res.ok){
       const err=await res.json().catch(()=>({}));
+      console.log('Live API error body:', err);
       throw new Error(`API ${res.status}: ${err.message||res.statusText}`);
     }
 

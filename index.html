@@ -2918,18 +2918,14 @@ async function liveRun(){
 
   try{
     const today=new Date().toISOString().split('T')[0];
-    const res=await fetch(
-      `https://api.football-data.org/v4/matches?status=IN_PLAY,PAUSED&dateFrom=${today}&dateTo=${today}`,
-      {headers:{'X-Auth-Token':apiKey}}
-    );
+    // Chama a Netlify Function que faz o proxy sem CORS
+    const res=await fetch('/.netlify/functions/live-matches',{
+      headers:{'x-fd-key':apiKey}
+    });
 
-    // Loga resposta completa para diagnóstico
-    console.log('Live API status:', res.status, res.statusText);
-    console.log('Live API headers:', [...res.headers.entries()]);
-
+    console.log('Live API status:', res.status);
     if(!res.ok){
       const err=await res.json().catch(()=>({}));
-      console.log('Live API error body:', err);
       throw new Error(`API ${res.status}: ${err.message||res.statusText}`);
     }
 

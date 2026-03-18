@@ -409,17 +409,17 @@ input[type=date]{width:160px;}
     </div>
   </div>
   <div class="nav-label">// Módulos</div>
-  <button class="nav-item active" onclick="nav('grade')">🎯 Grade do Dia <span class="nav-badge" id="badge-grade">—</span></button>
-  <button class="nav-item" onclick="nav('motor')">⚙️ Motor Preditivo</button>
-  <button class="nav-item" onclick="nav('classificacao')">🏆 Classificação</button>
-  <button class="nav-item" onclick="nav('cantos')">🚩 Cantos</button>
-  <button class="nav-item" onclick="nav('winrate')">📊 Winrate</button>
-  <button class="nav-item" onclick="nav('alavancagem')">🚀 Alavancagem</button>
-  <button class="nav-item" onclick="nav('bilhetes')">🎫 Bilhetes</button>
-  <button class="nav-item" onclick="nav('analisador')">🔎 Analisador Times</button>
-  <button class="nav-item" onclick="nav('favoritos')">⭐ Favoritos <span class="nav-badge" id="badge-favs">0</span></button>
-  <button class="nav-item" onclick="nav('ia')">🤖 Monitor IA</button>
-  <button class="nav-item" onclick="nav('aovivo')" id="nav-aovivo">🔴 Ao Vivo <span class="nav-badge" id="badge-aovivo" style="background:rgba(255,69,96,.15);color:var(--red);border-color:rgba(255,69,96,.3);">OFF</span></button>
+  <button class="nav-item active" onclick="nav('grade');closeMobileSidebar()">🎯 Grade do Dia <span class="nav-badge" id="badge-grade">—</span></button>
+  <button class="nav-item" onclick="nav('motor');closeMobileSidebar()">⚙️ Motor Preditivo</button>
+  <button class="nav-item" onclick="nav('classificacao');closeMobileSidebar()">🏆 Classificação</button>
+  <button class="nav-item" onclick="nav('cantos');closeMobileSidebar()">🚩 Cantos</button>
+  <button class="nav-item" onclick="nav('winrate');closeMobileSidebar()">📊 Winrate</button>
+  <button class="nav-item" onclick="nav('alavancagem');closeMobileSidebar()">🚀 Alavancagem</button>
+  <button class="nav-item" onclick="nav('bilhetes');closeMobileSidebar()">🎫 Bilhetes</button>
+  <button class="nav-item" onclick="nav('analisador');closeMobileSidebar()">🔎 Analisador Times</button>
+  <button class="nav-item" onclick="nav('favoritos');closeMobileSidebar()">⭐ Favoritos <span class="nav-badge" id="badge-favs">0</span></button>
+  <button class="nav-item" onclick="nav('ia');closeMobileSidebar()">🤖 Monitor IA</button>
+  <button class="nav-item" onclick="nav('aovivo');closeMobileSidebar()" id="nav-aovivo">🔴 Ao Vivo <span class="nav-badge" id="badge-aovivo" style="background:rgba(255,69,96,.15);color:var(--red);border-color:rgba(255,69,96,.3);">OFF</span></button>
   <div style="flex:1"></div>
   <div style="font-size:9px;color:var(--text3);text-align:center;font-family:'JetBrains Mono',monospace;padding:8px 0;letter-spacing:.08em;" id="db-count">CARREGANDO...</div>
 </aside>
@@ -3552,11 +3552,6 @@ function closeMobileSidebar(){
   document.querySelector('.sidebar').classList.remove('mobile-open');
   document.getElementById('sidebar-overlay').classList.remove('active');
 }
-// Fecha sidebar ao navegar no mobile
-function navMobile(p){navOriginal(p);if(window.innerWidth<=768)closeMobileSidebar();}
-const navOriginal=nav;
-window.nav=function(p){navOriginal(p);if(window.innerWidth<=768)closeMobileSidebar();};
-
 loadAll();
 </script>
 </body>

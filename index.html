@@ -40,7 +40,16 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 ::-webkit-scrollbar-thumb{background:var(--border3);border-radius:2px;}
 
 /* ═══ LAYOUT ═══ */
-.shell{display:grid;grid-template-columns:240px 1fr;grid-template-rows:60px 1fr;height:100vh;position:relative;z-index:1;}
+
+.shell{display:grid;grid-template-columns:240px 1fr;grid-template-rows:60px 1fr;height:100vh;position:relative;z-index:1;transition:grid-template-columns .25s ease;}
+.shell.sidebar-collapsed{grid-template-columns:0px 1fr;}
+.shell.sidebar-collapsed .sidebar{transform:translateX(-100%);pointer-events:none;}
+.shell.sidebar-collapsed .sidebar-toggle{left:8px;}
+.sidebar-toggle{position:fixed;top:50%;left:240px;transform:translateY(-50%);z-index:200;width:18px;height:48px;background:var(--surface2);border:1px solid var(--border2);border-left:none;border-radius:0 6px 6px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:10px;transition:left .25s ease,background .15s;}
+.sidebar-toggle:hover{background:var(--surface3);color:var(--accent);}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;}
+.mobile-menu-btn{display:none;background:transparent;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 8px;}
+@media(max-width:768px){.shell{grid-template-columns:1fr;grid-template-rows:56px 1fr;}.shell.sidebar-collapsed .sidebar{transform:translateX(-100%);}.sidebar{position:fixed;top:56px;left:0;bottom:0;width:240px;z-index:160;transform:translateX(-100%);transition:transform .25s ease;}.sidebar.mobile-open{transform:translateX(0);}.sidebar-overlay.active{display:block;}.sidebar-toggle{display:none;}.mobile-menu-btn{display:flex!important;}header{grid-column:1;}.main{grid-column:1;height:calc(100vh - 56px);overflow-y:auto;}.tg-inputs{display:none!important;}.topbar-center{display:none!important;}.grid-2,.grid-3,.grid-4,.grid-5{grid-template-columns:1fr!important;}.panel{padding:.75rem!important;}input,select{font-size:16px!important;}}
 
 /* ═══ TOPBAR ═══ */
 .topbar{
@@ -357,6 +366,7 @@ input[type=date]{width:160px;}
 
 <!-- TOPBAR -->
 <header class="topbar">
+  <button class="mobile-menu-btn" onclick="openMobileSidebar()" title="Menu">☰</button>
   <div class="logo-area">
     <img src="https://raw.githubusercontent.com/bet2all-scorpion/football-data-bet2all/refs/heads/main/logo.png"
          onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'"
@@ -382,6 +392,10 @@ input[type=date]{width:160px;}
     <span class="badge badge-live">● PRÉ-JOGO</span>
   </div>
 </header>
+
+<!-- SIDEBAR TOGGLE -->
+<button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Recolher menu">❮</button>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
@@ -423,11 +437,11 @@ input[type=date]{width:160px;}
           <span id="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;"></span>
           MONITOR AO VIVO
         </div>
-        <div style="font-size:12px;color:var(--text3)">A IA monitora os jogos e dispara alertas de gol e escanteio limite em tempo real</div>
+        <div style="font-size:12px;color:var(--text3)">4 alertas inteligentes · Stats em tempo real via API-Football · IA contextualiza cada alerta</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">API Key:</div>
-        <input type="password" id="live-api-key" placeholder="football-data.org key" style="width:180px;font-size:12px;" oninput="localStorage.setItem('fdkey',this.value)"/>
+        <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">RapidAPI Key:</div>
+        <input type="password" id="live-api-key" placeholder="X-RapidAPI-Key" style="width:200px;font-size:12px;" oninput="localStorage.setItem('fdkey',this.value)"/>
         <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">Atualizar a cada:</div>
         <select id="live-interval" style="width:100px;font-size:12px;">
           <option value="60">1 min</option>
@@ -446,27 +460,39 @@ input[type=date]{width:160px;}
     <span id="live-next-update" style="font-size:11px;color:var(--text3);margin-left:auto;">Próx. atualização: --</span>
   </div>
 
-  <!-- ALERTAS -->
+  <!-- 4 ALERTAS -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
-    <!-- Alertas de Gol -->
-    <div class="panel" style="border-color:rgba(57,255,120,.2);margin-bottom:0;">
-      <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>⚽ ALERTAS DE GOL</span>
-        <span id="badge-alertas-gol" style="font-size:10px;background:rgba(57,255,120,.1);color:var(--green);padding:1px 8px;border-radius:20px;border:1px solid rgba(57,255,120,.2);">0</span>
+    <!-- GOL HT -->
+    <div class="panel" style="border-color:rgba(57,255,120,.25);margin-bottom:0;">
+      <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between;font-size:11px;">
+        <span>⚽ GOL HT <span style="font-size:9px;color:var(--text3);">(Over 0.5 HT · 20-45')</span></span>
+        <span id="badge-alerta-golht" style="font-size:10px;background:rgba(57,255,120,.1);color:var(--green);padding:1px 8px;border-radius:20px;border:1px solid rgba(57,255,120,.2);">0</span>
       </div>
-      <div id="live-alertas-gol" style="max-height:400px;overflow-y:auto;">
-        <div style="text-align:center;padding:2rem;color:var(--text3);font-size:12px;">Monitor offline</div>
-      </div>
+      <div id="live-alerta-golht" style="max-height:300px;overflow-y:auto;"><div style="text-align:center;padding:1.5rem;color:var(--text3);font-size:12px;">Monitor offline</div></div>
     </div>
-    <!-- Alertas de Escanteio -->
-    <div class="panel" style="border-color:rgba(255,208,0,.2);margin-bottom:0;">
-      <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>🚩 ALERTAS DE ESCANTEIO LIMITE</span>
-        <span id="badge-alertas-canto" style="font-size:10px;background:rgba(255,208,0,.1);color:var(--amber);padding:1px 8px;border-radius:20px;border:1px solid rgba(255,208,0,.2);">0</span>
+    <!-- CANTO HT -->
+    <div class="panel" style="border-color:rgba(255,208,0,.25);margin-bottom:0;">
+      <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between;font-size:11px;">
+        <span>🚩 CANTO HT <span style="font-size:9px;color:var(--text3);">(Limite · 34-38')</span></span>
+        <span id="badge-alerta-cantoht" style="font-size:10px;background:rgba(255,208,0,.1);color:var(--amber);padding:1px 8px;border-radius:20px;border:1px solid rgba(255,208,0,.2);">0</span>
       </div>
-      <div id="live-alertas-canto" style="max-height:400px;overflow-y:auto;">
-        <div style="text-align:center;padding:2rem;color:var(--text3);font-size:12px;">Monitor offline</div>
+      <div id="live-alerta-cantoht" style="max-height:300px;overflow-y:auto;"><div style="text-align:center;padding:1.5rem;color:var(--text3);font-size:12px;">Monitor offline</div></div>
+    </div>
+    <!-- GOL FT -->
+    <div class="panel" style="border-color:rgba(0,229,255,.25);margin-bottom:0;">
+      <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between;font-size:11px;">
+        <span>⚽ GOL FT <span style="font-size:9px;color:var(--text3);">(Limite · 70-90')</span></span>
+        <span id="badge-alerta-golft" style="font-size:10px;background:rgba(0,229,255,.1);color:var(--teal);padding:1px 8px;border-radius:20px;border:1px solid rgba(0,229,255,.2);">0</span>
       </div>
+      <div id="live-alerta-golft" style="max-height:300px;overflow-y:auto;"><div style="text-align:center;padding:1.5rem;color:var(--text3);font-size:12px;">Monitor offline</div></div>
+    </div>
+    <!-- CANTO FT -->
+    <div class="panel" style="border-color:rgba(191,95,255,.25);margin-bottom:0;">
+      <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between;font-size:11px;">
+        <span>🚩 CANTO FT <span style="font-size:9px;color:var(--text3);">(Limite · 80-90')</span></span>
+        <span id="badge-alerta-cantoft" style="font-size:10px;background:rgba(191,95,255,.1);color:var(--purple);padding:1px 8px;border-radius:20px;border:1px solid rgba(191,95,255,.2);">0</span>
+      </div>
+      <div id="live-alerta-cantoft" style="max-height:300px;overflow-y:auto;"><div style="text-align:center;padding:1.5rem;color:var(--text3);font-size:12px;">Monitor offline</div></div>
     </div>
   </div>
 
@@ -2374,9 +2400,8 @@ async function callClaude(prompt, useWebSearch=false){
   const key=iaGetKey();
   if(!key) throw new Error('Configure sua API Key do OpenRouter no campo acima.\nObtenha em: openrouter.ai/keys');
 
-  // openrouter/auto seleciona automaticamente o melhor modelo gratuito disponível
+  // Apenas modelos gratuitos — custo zero garantido
   const models=[
-    'openrouter/auto',
     'meta-llama/llama-3.3-70b-instruct:free',
     'google/gemma-3-27b-it:free',
     'deepseek/deepseek-r1:free',
@@ -2886,10 +2911,323 @@ function iaInit(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// MONITOR AO VIVO
+// ═══════════════════════════════════════════════════════════════════
+// MONITOR AO VIVO — 4 ALERTAS INTELIGENTES + API-FOOTBALL + IA
 // ═══════════════════════════════════════════════════════════════════
 let liveActive=false,liveTimer=null,liveCountdown=null,liveSecondsLeft=0;
-let liveAlertasGol=[],liveAlertasCanto=[],liveJogosVistosGol=new Set(),liveJogosVistosCanto=new Set();
+let liveAlertas={golht:[],cantoht:[],golft:[],cantoft:[]};
+let liveVisto={golht:new Set(),cantoht:new Set(),golft:new Set(),cantoft:new Set()};
+
+function liveToggle(){if(liveActive)liveStop();else liveStart();}
+
+function liveStart(){
+  liveActive=true;
+  document.getElementById('live-btn-start').textContent='⏹ PARAR MONITOR';
+  document.getElementById('live-btn-start').style.cssText+='background:rgba(255,69,96,.15);border-color:rgba(255,69,96,.4);color:var(--red);';
+  document.getElementById('live-status').style.display='flex';
+  document.getElementById('badge-aovivo').textContent='ON';
+  document.getElementById('badge-aovivo').style.cssText='background:rgba(57,255,120,.15);color:var(--green);';
+  document.getElementById('live-dot').style.animation='pulse-badge 1s ease-in-out infinite';
+  liveRun();
+}
+
+function liveStop(){
+  liveActive=false;
+  clearTimeout(liveTimer);clearInterval(liveCountdown);
+  document.getElementById('live-btn-start').textContent='▶ INICIAR MONITOR';
+  document.getElementById('live-btn-start').style.cssText='';
+  document.getElementById('live-status').style.display='none';
+  document.getElementById('badge-aovivo').textContent='OFF';
+  document.getElementById('badge-aovivo').style.cssText='background:rgba(255,69,96,.15);color:var(--red);';
+  document.getElementById('live-dot').style.animation='';
+}
+
+async function liveRun(){
+  if(!liveActive)return;
+  const interval=parseInt(document.getElementById('live-interval').value)||120;
+  const apiKey=(document.getElementById('live-api-key').value||localStorage.getItem('fdkey')||'').trim();
+  if(!apiKey){
+    document.getElementById('live-status-text').textContent='⚠️ Insira a RapidAPI Key';
+    liveStop();return;
+  }
+  document.getElementById('live-status-text').textContent='Buscando jogos ao vivo...';
+  try{
+    // API-Football via Netlify Function proxy
+    const res=await fetch('/.netlify/functions/live-matches',{headers:{'x-rapid-key':apiKey}});
+    if(!res.ok)throw new Error(`API ${res.status}`);
+    const data=await res.json();
+    const fixtures=(data.response||[]);
+    if(!fixtures.length){
+      document.getElementById('live-status-text').textContent='Nenhum jogo ao vivo no momento';
+      document.getElementById('live-jogos').innerHTML='<div style="text-align:center;padding:1.5rem;color:var(--text3);font-size:12px;">Nenhum jogo ao vivo encontrado</div>';
+    }else{
+      const jogos=fixtures.map(f=>({
+        id:f.fixture?.id,
+        home:f.teams?.home?.name||'',
+        away:f.teams?.away?.name||'',
+        liga:f.league?.name||'',
+        minuto:f.fixture?.status?.elapsed||0,
+        periodo:f.fixture?.status?.short||'',
+        placar_home:f.goals?.home??0,
+        placar_away:f.goals?.away??0,
+        // Stats
+        chutes_alvo_home:liveStat(f,'Shots on Goal',0),
+        chutes_alvo_away:liveStat(f,'Shots on Goal',1),
+        chutes_travados_home:liveStat(f,'Blocked Shots',0),
+        chutes_travados_away:liveStat(f,'Blocked Shots',1),
+        ataques_perigosos_home:liveStat(f,'Dangerous Attacks',0),
+        ataques_perigosos_away:liveStat(f,'Dangerous Attacks',1),
+        posse_home:liveStatPct(f,'Ball Possession',0),
+        posse_away:liveStatPct(f,'Ball Possession',1),
+        cantos_home:liveStat(f,'Corner Kicks',0),
+        cantos_away:liveStat(f,'Corner Kicks',1),
+        pressao_home:liveStat(f,'Pressure',0)||liveStat(f,'Attacks',0),
+        pressao_away:liveStat(f,'Pressure',1)||liveStat(f,'Attacks',1),
+      })).filter(j=>j.home&&j.away);
+      liveProcessarJogos(jogos);
+    }
+  }catch(e){
+    document.getElementById('live-status-text').textContent=`Erro: ${e.message}`;
+  }
+  // Countdown
+  liveSecondsLeft=interval;
+  clearInterval(liveCountdown);
+  liveCountdown=setInterval(()=>{
+    liveSecondsLeft--;
+    const m=Math.floor(liveSecondsLeft/60),s=liveSecondsLeft%60;
+    document.getElementById('live-next-update').textContent=`Próx. atualização: ${m}:${String(s).padStart(2,'0')}`;
+    if(liveSecondsLeft<=0)clearInterval(liveCountdown);
+  },1000);
+  liveTimer=setTimeout(()=>liveRun(),interval*1000);
+}
+
+function liveStat(f,name,teamIdx){
+  const stats=f.statistics?.[teamIdx]?.statistics||[];
+  const s=stats.find(x=>x.type===name);
+  return parseInt(s?.value)||0;
+}
+function liveStatPct(f,name,teamIdx){
+  const stats=f.statistics?.[teamIdx]?.statistics||[];
+  const s=stats.find(x=>x.type===name);
+  return parseInt((s?.value||'0').replace('%',''))||0;
+}
+
+function liveProcessarJogos(jogos){
+  document.getElementById('live-status-text').textContent=`Monitorando ${jogos.length} jogos ao vivo`;
+  // Tabela de jogos
+  document.getElementById('live-jogos').innerHTML=`
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr>
+          ${['JOGO','MIN','PLACAR','CHT.ALV','CHT.TRV','AT.PERIG','POSSE','CANTOS','ALERTAS'].map(h=>`<th style="text-align:${h==='JOGO'?'left':'center'};padding:6px 8px;color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;border-bottom:1px solid var(--border2);">${h}</th>`).join('')}
+        </tr></thead>
+        <tbody>
+          ${jogos.map(j=>{
+            const min=j.minuto||0;
+            const tc=j.cantos_home+j.cantos_away;
+            const checks=liveChecks(j);
+            const badges=Object.entries(checks).filter(([,v])=>v).map(([k])=>({
+              golht:'<span style="font-size:9px;background:rgba(57,255,120,.15);color:var(--green);padding:1px 5px;border-radius:8px;border:1px solid rgba(57,255,120,.3);">⚽HT</span>',
+              cantoht:'<span style="font-size:9px;background:rgba(255,208,0,.15);color:var(--amber);padding:1px 5px;border-radius:8px;border:1px solid rgba(255,208,0,.3);">🚩HT</span>',
+              golft:'<span style="font-size:9px;background:rgba(0,229,255,.15);color:var(--teal);padding:1px 5px;border-radius:8px;border:1px solid rgba(0,229,255,.3);">⚽FT</span>',
+              cantoft:'<span style="font-size:9px;background:rgba(191,95,255,.15);color:var(--purple);padding:1px 5px;border-radius:8px;border:1px solid rgba(191,95,255,.3);">🚩FT</span>',
+            }[k])).join(' ');
+            return`<tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;"><div style="font-weight:500;white-space:nowrap;">${j.home} x ${j.away}</div><div style="font-size:10px;color:var(--text3);">${j.liga}</div></td>
+              <td style="text-align:center;padding:8px;"><span style="font-family:'Orbitron',monospace;font-size:13px;color:${min>=80?'var(--red)':min>=45?'var(--amber)':'var(--green)'};">${min}'</span><div style="font-size:9px;color:var(--text3);">${j.periodo}</div></td>
+              <td style="text-align:center;padding:8px;font-family:'Orbitron',monospace;font-weight:700;font-size:15px;color:var(--accent);">${j.placar_home}-${j.placar_away}</td>
+              <td style="text-align:center;padding:8px;color:var(--text2);font-family:'JetBrains Mono',monospace;">${j.chutes_alvo_home+j.chutes_alvo_away}</td>
+              <td style="text-align:center;padding:8px;color:${(j.chutes_travados_home+j.chutes_travados_away)>=2?'var(--amber)':'var(--text2)'};font-family:'JetBrains Mono',monospace;">${j.chutes_travados_home+j.chutes_travados_away}</td>
+              <td style="text-align:center;padding:8px;color:${(j.ataques_perigosos_home+j.ataques_perigosos_away)>=60?'var(--amber)':'var(--text2)'};font-family:'JetBrains Mono',monospace;">${j.ataques_perigosos_home+j.ataques_perigosos_away}</td>
+              <td style="text-align:center;padding:8px;font-size:11px;color:var(--text2);">${j.posse_home}%/${j.posse_away}%</td>
+              <td style="text-align:center;padding:8px;color:${tc>=9?'var(--amber)':'var(--text2)'};font-family:'JetBrains Mono',monospace;">${tc}</td>
+              <td style="text-align:center;padding:8px;">${badges||'—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  // Processa alertas
+  jogos.forEach(j=>liveDispararAlertas(j));
+}
+
+// ── LÓGICA DOS 4 ALERTAS INTELIGENTES ──
+function liveChecks(j){
+  const min=j.minuto||0;
+  const tc=j.cantos_home+j.cantos_away;
+  const totalGols=(j.placar_home||0)+(j.placar_away||0);
+  const appm_home=min>0?j.ataques_perigosos_home/min:0;
+  const appm_away=min>0?j.ataques_perigosos_away/min:0;
+  const appm=Math.max(appm_home,appm_away);
+  const chutes_alvo=j.chutes_alvo_home+j.chutes_alvo_away;
+  const chutes_trav=j.chutes_travados_home+j.chutes_travados_away;
+  const posse_max=Math.max(j.posse_home,j.posse_away);
+
+  // 1. GOL HT (Over 0.5 HT) — 20-45'
+  const golht=(()=>{
+    if(min<20||min>45)return false;
+    if(j.periodo==='HT'||j.periodo==='PAUSED')return false;
+    let score=0;
+    if(appm>=1.0)score++;
+    if(chutes_alvo>=2)score++;
+    if(appm>=1.5)score++; // bônus APPM muito alto
+    return score>=2;
+  })();
+
+  // 2. CANTO HT (Limite HT) — 34-38'
+  const cantoht=(()=>{
+    if(min<34||min>38)return false;
+    let score=0;
+    if(tc>=3)score++;
+    if(chutes_trav>=2)score++;
+    if(appm>=0.8)score++;
+    return score>=2;
+  })();
+
+  // 3. GOL FT (Gol Limite) — 70-90'
+  const golft=(()=>{
+    if(min<70)return false;
+    let score=0;
+    if(appm>=1.2)score++;
+    if(chutes_alvo>=2)score++;
+    if(posse_max>=65)score++;
+    if(chutes_trav>=2)score++; // bônus
+    return score>=3;
+  })();
+
+  // 4. CANTO FT (Canto Limite FT) — 80-90'
+  const cantoft=(()=>{
+    if(min<80)return false;
+    let score=0;
+    if(chutes_trav>=2)score++;
+    if((j.ataques_perigosos_home+j.ataques_perigosos_away)>=60)score++;
+    if(posse_max>=65)score++;
+    if(appm>=1.2)score++;
+    return score>=3;
+  })();
+
+  return{golht,cantoht,golft,cantoft};
+}
+
+async function liveDispararAlertas(j){
+  const key=`${j.home}|${j.away}`;
+  const min=j.minuto||0;
+  const now=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const checks=liveChecks(j);
+  const tc=j.cantos_home+j.cantos_away;
+  const appm=min>0?Math.max(j.ataques_perigosos_home,j.ataques_perigosos_away)/min:0;
+
+  const configs={
+    golht:{
+      id:'golht',cor:'rgba(57,255,120',corVar:'--green',
+      titulo:'⚽ GOL HT',mercado:'Over 0.5 HT',
+      resumo:`${min}' | APPM: ${appm.toFixed(2)} | Chutes no alvo: ${j.chutes_alvo_home+j.chutes_alvo_away}`
+    },
+    cantoht:{
+      id:'cantoht',cor:'rgba(255,208,0',corVar:'--amber',
+      titulo:'🚩 CANTO HT',mercado:'Canto Limite HT',
+      resumo:`${min}' | Cantos: ${tc} | Chutes trav.: ${j.chutes_travados_home+j.chutes_travados_away}`
+    },
+    golft:{
+      id:'golft',cor:'rgba(0,229,255',corVar:'--teal',
+      titulo:'⚽ GOL FT',mercado:'Gol Limite FT',
+      resumo:`${min}' | APPM: ${appm.toFixed(2)} | Posse máx: ${Math.max(j.posse_home,j.posse_away)}%`
+    },
+    cantoft:{
+      id:'cantoft',cor:'rgba(191,95,255',corVar:'--purple',
+      titulo:'🚩 CANTO FT',mercado:'Canto Limite FT',
+      resumo:`${min}' | Cantos: ${tc} | Chutes trav.: ${j.chutes_travados_home+j.chutes_travados_away} | Posse: ${Math.max(j.posse_home,j.posse_away)}%`
+    }
+  };
+
+  for(const [tipo,cfg] of Object.entries(configs)){
+    if(!checks[tipo])continue;
+    const vKey=`${key}|${min}|${tipo}`;
+    if(liveVisto[tipo].has(vKey))continue;
+    liveVisto[tipo].add(vKey);
+
+    // Card do alerta com loading de IA
+    const alertId=`alerta-${tipo}-${Date.now()}`;
+    const alerta={
+      id:alertId,time:now,home:j.home,away:j.away,liga:j.liga,
+      minuto:min,placar:`${j.placar_home}-${j.placar_away}`,
+      resumo:cfg.resumo,mercado:cfg.mercado,
+      cor:cfg.cor,corVar:cfg.corVar,titulo:cfg.titulo,
+      iaText:'<span style="color:var(--text3);font-size:11px;font-style:italic;">🤖 Consultando IA...</span>'
+    };
+    liveAlertas[tipo].unshift(alerta);
+    liveRenderAlertas();
+    liveSom(tipo.includes('gol')?'gol':'canto');
+    sendTelegram(`${cfg.titulo} *ALERTA AO VIVO*\n🏆 ${j.liga}\n⚽ *${j.home}* x *${j.away}*\n⏱ ${cfg.resumo}\n💡 Mercado: ${cfg.mercado}\n\n🦅 GreenScore PRO`);
+
+    // Chama IA para contextualizar (sem bloquear)
+    liveIaContextualizar(j,tipo,cfg,alertId);
+  }
+}
+
+async function liveIaContextualizar(j,tipo,cfg,alertId){
+  const iaKey=(document.getElementById('ia-api-key')?.value||localStorage.getItem('ia_key')||'').trim();
+  if(!iaKey)return;
+  const prompt=`Você é um analista de apostas esportivas ao vivo. Analise rapidamente este cenário e dê uma recomendação objetiva em 2-3 frases:
+
+Jogo: ${j.home} x ${j.away} (${j.liga})
+Minuto: ${j.minuto}'
+Placar: ${j.placar_home}-${j.placar_away}
+Alerta disparado: ${cfg.mercado}
+Dados: ${cfg.resumo}
+Ataques perigosos casa: ${j.ataques_perigosos_home} | Visitante: ${j.ataques_perigosos_away}
+Chutes no alvo: ${j.chutes_alvo_home+j.chutes_alvo_away} | Chutes travados: ${j.chutes_travados_home+j.chutes_travados_away}
+Posse: ${j.posse_home}% x ${j.posse_away}%
+Cantos: ${j.cantos_home} x ${j.cantos_away}
+
+Responda em português, seja direto e objetivo. Diga se o alerta é forte ou fraco e por quê.`;
+
+  try{
+    const iaText=await callOpenRouter(prompt,iaKey);
+    // Atualiza o card com resposta da IA
+    const idx=liveAlertas[tipo].findIndex(a=>a.id===alertId);
+    if(idx>=0){liveAlertas[tipo][idx].iaText=iaText;liveRenderAlertas();}
+  }catch(e){
+    const idx=liveAlertas[tipo].findIndex(a=>a.id===alertId);
+    if(idx>=0){liveAlertas[tipo][idx].iaText='<span style="color:var(--text3);font-size:11px;">IA indisponível</span>';liveRenderAlertas();}
+  }
+}
+
+function liveRenderAlertas(){
+  const tipos={
+    golht:{el:'live-alerta-golht',badge:'badge-alerta-golht'},
+    cantoht:{el:'live-alerta-cantoht',badge:'badge-alerta-cantoht'},
+    golft:{el:'live-alerta-golft',badge:'badge-alerta-golft'},
+    cantoft:{el:'live-alerta-cantoft',badge:'badge-alerta-cantoft'},
+  };
+  for(const [tipo,cfg] of Object.entries(tipos)){
+    const arr=liveAlertas[tipo];
+    document.getElementById(cfg.badge).textContent=arr.length;
+    document.getElementById(cfg.el).innerHTML=arr.length?arr.map(a=>`
+      <div id="${a.id}" style="border:1px solid ${a.cor},.3);border-radius:8px;padding:10px;margin-bottom:8px;background:${a.cor},.06);animation:fadeIn .3s ease;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+          <div style="font-weight:600;font-size:13px;">${a.home} x ${a.away}</div>
+          <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${a.time}</div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-family:'JetBrains Mono',monospace;">${a.liga} · ${a.resumo} · ${a.placar}</div>
+        <div style="font-size:11px;color:var(--text);background:${a.cor},.1);border-radius:5px;padding:6px 8px;margin-bottom:6px;">${a.iaText}</div>
+        <div style="font-size:10px;color:var(${a.corVar});font-weight:600;">🎯 ${a.mercado}</div>
+      </div>`).join('')
+    :`<div style="text-align:center;padding:1.5rem;color:var(--text3);font-size:12px;">Nenhum alerta</div>`;
+  }
+}
+
+function liveSom(tipo){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.frequency.value=tipo==='gol'?880:660;osc.type='sine';
+    gain.gain.setValueAtTime(0.3,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.5);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.5);
+  }catch(e){}
+}
 
 function liveToggle(){
   if(liveActive)liveStop();else liveStart();
@@ -3189,7 +3527,35 @@ async function sendTelegram(msg){
 document.getElementById('tgToken').value=localStorage.getItem('tgt')||'';
 document.getElementById('tgChat').value=localStorage.getItem('tgc')||'';
 document.getElementById('live-api-key').value=localStorage.getItem('fdkey')||'';
+document.getElementById('ia-api-key').value=localStorage.getItem('ia_key')||'';
+
+// Auto-salva keys ao digitar
+document.getElementById('tgToken').addEventListener('input',e=>localStorage.setItem('tgt',e.target.value));
+document.getElementById('tgChat').addEventListener('input',e=>localStorage.setItem('tgc',e.target.value));
+document.getElementById('live-api-key').addEventListener('input',e=>localStorage.setItem('fdkey',e.target.value));
+document.getElementById('ia-api-key').addEventListener('input',e=>localStorage.setItem('ia_key',e.target.value));
+
 // Carrega automaticamente ao abrir
+// ═══ SIDEBAR TOGGLE ═══
+function toggleSidebar(){
+  const shell=document.querySelector('.shell');
+  const btn=document.getElementById('sidebar-toggle');
+  const collapsed=shell.classList.toggle('sidebar-collapsed');
+  btn.textContent=collapsed?'❯':'❮';
+  btn.style.left=collapsed?'8px':'240px';
+}
+function openMobileSidebar(){
+  document.querySelector('.sidebar').classList.add('mobile-open');
+  document.getElementById('sidebar-overlay').classList.add('active');
+}
+function closeMobileSidebar(){
+  document.querySelector('.sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay').classList.remove('active');
+}
+// Fecha sidebar ao navegar no mobile
+const _navOrig=nav;
+function nav(p){_navOrig(p);if(window.innerWidth<=768)closeMobileSidebar();}
+
 loadAll();
 </script>
 </body>

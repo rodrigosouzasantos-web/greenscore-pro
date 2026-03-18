@@ -718,12 +718,12 @@ input[type=date]{width:160px;}
 
 <!-- ═══════════════════════════ ANALISADOR ═══════════════════════════ -->
 <div id="page-analisador" class="page" style="display:none;">
-  <div class="panel">
+  <div class="panel" style="overflow:visible;min-height:320px;">
     <div class="panel-title">Scout profundo de times</div>
-    <div style="position:relative;max-width:360px;">
+    <div style="position:relative;max-width:600px;">
       <span class="slabel">Pesquisar time</span>
-      <input type="text" id="ana-search" placeholder="Digite o nome do time..." oninput="filterTeamSearch()" style="width:100%;"/>
-      <div id="ana-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-top:4px;z-index:50;overflow:hidden;"></div>
+      <input type="text" id="ana-search" placeholder="Digite ou selecione o nome do time..." oninput="filterTeamSearch()" onfocus="showAllTeams()" onblur="setTimeout(()=>document.getElementById('ana-dropdown').style.display='none',200)" style="width:100%;font-size:15px;padding:10px 14px;"/>
+      <div id="ana-dropdown" style="display:none;position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-top:4px;z-index:9999;max-height:320px;overflow-y:auto;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.6);"></div>
     </div>
   </div>
   <div id="ana-result"></div>
@@ -2062,15 +2062,35 @@ async function sendBilhete(i,tipo){
 // ═══════════════════════════════════════════════════════════════════
 // ANALISADOR DE TIMES
 // ═══════════════════════════════════════════════════════════════════
+function getAllTeams(){
+  return [...new Set([...DF.flatMap(r=>[r.HomeTeam,r.AwayTeam]),...DF_CURR.flatMap(r=>[r.HomeTeam,r.AwayTeam])])].filter(Boolean).sort();
+}
+
+function renderDropdown(teams){
+  const dd=document.getElementById('ana-dropdown');
+  const input=document.getElementById('ana-search');
+  if(!teams.length){dd.style.display='none';return;}
+  const rect=input.getBoundingClientRect();
+  dd.style.top=(rect.bottom+4)+'px';
+  dd.style.left=rect.left+'px';
+  dd.style.width=rect.width+'px';
+  dd.style.display='block';
+  dd.innerHTML=teams.map(t=>`<div onmousedown="selectTeam('${t.replace(/'/g,"\\'")}','${t.replace(/'/g,"\\'")}');document.getElementById('ana-dropdown').style.display='none'" style="padding:9px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);white-space:nowrap;" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='transparent'">${t}</div>`).join('');
+}
+
+function showAllTeams(){
+  const q=document.getElementById('ana-search').value.trim();
+  const all=getAllTeams();
+  const filtered=q.length>=1?all.filter(t=>t.toLowerCase().includes(q.toLowerCase())):all;
+  renderDropdown(filtered);
+}
+
 function filterTeamSearch(){
   const q=document.getElementById('ana-search').value.trim();
-  const dd=document.getElementById('ana-dropdown');
-  if(q.length<2){dd.style.display='none';return;}
-  const all=[...new Set(DF.flatMap(r=>[r.HomeTeam,r.AwayTeam]))].sort();
-  const matches=all.filter(t=>t.toLowerCase().includes(q.toLowerCase())).slice(0,8);
-  if(!matches.length){dd.style.display='none';return;}
-  dd.style.display='block';
-  dd.innerHTML=matches.map(t=>`<div onclick="selectTeam('${t.replace(/'/g,"\\'")}','${t.replace(/'/g,"\\'")}');document.getElementById('ana-dropdown').style.display='none'" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='transparent'">${t}</div>`).join('');
+  const all=getAllTeams();
+  if(!q){renderDropdown(all);return;}
+  const matches=all.filter(t=>t.toLowerCase().includes(q.toLowerCase()));
+  renderDropdown(matches);
 }
 
 function selectTeam(display,team){

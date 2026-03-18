@@ -2390,13 +2390,12 @@ async function callClaude(prompt, useWebSearch=false){
   const key=iaGetKey();
   if(!key) throw new Error('Configure sua API Key do OpenRouter no campo acima.\nObtenha em: openrouter.ai/keys');
 
-  // Apenas modelos gratuitos — custo zero garantido
+  // openrouter/free seleciona automaticamente o melhor modelo gratuito disponível
   const models=[
+    'openrouter/free',
     'meta-llama/llama-3.3-70b-instruct:free',
     'google/gemma-3-27b-it:free',
     'google/gemma-3-12b-it:free',
-    'mistralai/mistral-7b-instruct:free',
-    'microsoft/phi-3-mini-128k-instruct:free',
     'nousresearch/hermes-3-llama-3.1-8b:free'
   ];
 

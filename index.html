@@ -2974,7 +2974,14 @@ async function liveRun(){
         cantos_away:liveStat(f,'Corner Kicks',1),
         pressao_home:liveStat(f,'Pressure',0)||liveStat(f,'Attacks',0),
         pressao_away:liveStat(f,'Pressure',1)||liveStat(f,'Attacks',1),
-      })).filter(j=>j.home&&j.away);
+        tem_stats:(f.statistics?.length||0)>0
+      })).filter(j=>j.home&&j.away&&j.tem_stats);
+      // Mostra contagem total e com stats
+      const total=fixtures.filter(f=>f.teams?.home?.name).length;
+      const comStats=jogos.length;
+      document.getElementById('live-status-text').textContent=
+        comStats?`Monitorando ${comStats} jogos com stats (${total} ao vivo no total)`
+               :`Nenhum jogo com stats disponíveis (${total} ao vivo sem dados)`;
       liveProcessarJogos(jogos);
     }
   }catch(e){

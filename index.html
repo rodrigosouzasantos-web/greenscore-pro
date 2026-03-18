@@ -2946,6 +2946,8 @@ async function liveRun(){
     const res=await fetch('/api/live-matches',{headers:{'x-rapid-key':apiKey}});
     if(!res.ok)throw new Error(`API ${res.status}`);
     const data=await res.json();
+    console.log('API-Football total fixtures:', data.response?.length, '| errors:', data.errors, '| results:', data.results);
+    if(data.response?.length>0)console.log('Primeiro jogo:', JSON.stringify(data.response[0]?.fixture), JSON.stringify(data.response[0]?.league?.name), 'stats:', data.response[0]?.statistics?.length);
     const fixtures=(data.response||[]);
     if(!fixtures.length){
       document.getElementById('live-status-text').textContent='Nenhum jogo ao vivo no momento';

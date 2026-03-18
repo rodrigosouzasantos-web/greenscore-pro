@@ -3553,8 +3553,9 @@ function closeMobileSidebar(){
   document.getElementById('sidebar-overlay').classList.remove('active');
 }
 // Fecha sidebar ao navegar no mobile
-const _navOrig=nav;
-function nav(p){_navOrig(p);if(window.innerWidth<=768)closeMobileSidebar();}
+function navMobile(p){navOriginal(p);if(window.innerWidth<=768)closeMobileSidebar();}
+const navOriginal=nav;
+window.nav=function(p){navOriginal(p);if(window.innerWidth<=768)closeMobileSidebar();};
 
 loadAll();
 </script>

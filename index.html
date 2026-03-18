@@ -989,7 +989,9 @@ function calcCorners(df,home,away){
 function calcStandings(matches){
   const t={};
   matches.forEach(m=>{
-    const h=m.HomeTeam,a=m.AwayTeam,hg=m.FTHG,ag=m.FTAG;
+    const h=m.HomeTeam,a=m.AwayTeam;
+    const hg=parseInt(m.FTHG??m.HG??m.home_goals??m['Home Goals']??m.HomeGoals);
+    const ag=parseInt(m.FTAG??m.AG??m.away_goals??m['Away Goals']??m.AwayGoals);
     if(!h||!a||isNaN(hg)||isNaN(ag))return;
     if(!t[h])t[h]={P:0,W:0,D:0,L:0,GF:0,GA:0,Pts:0};
     if(!t[a])t[a]={P:0,W:0,D:0,L:0,GF:0,GA:0,Pts:0};
@@ -2341,20 +2343,8 @@ function calcPressureIndex(df,dfCurr,team,isHome){
   return{idx,label};
 }
 
-// Calcula standings simples retornando array [{team,pts,p,gd}]
-function calcStandings(matches){
-  const t={};
-  matches.forEach(r=>{
-    if(!t[r.HomeTeam])t[r.HomeTeam]={team:r.HomeTeam,pts:0,p:0,gd:0};
-    if(!t[r.AwayTeam])t[r.AwayTeam]={team:r.AwayTeam,pts:0,p:0,gd:0};
-    t[r.HomeTeam].p++;t[r.AwayTeam].p++;
-    t[r.HomeTeam].gd+=r.FTHG-r.FTAG;t[r.AwayTeam].gd+=r.FTAG-r.FTHG;
-    if(r.FTHG>r.FTAG){t[r.HomeTeam].pts+=3;}
-    else if(r.FTAG>r.FTHG){t[r.AwayTeam].pts+=3;}
-    else{t[r.HomeTeam].pts+=1;t[r.AwayTeam].pts+=1;}
-  });
-  return Object.values(t).sort((a,b)=>b.pts-a.pts||b.gd-a.gd);
-}
+// Calcula standings simples retornando array [{team,pts,p,gd}] — alias da principal
+
 
 // Detecta sequências anômalas de um time
 function detectAnomalies(df,team){

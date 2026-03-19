@@ -680,6 +680,16 @@ input[type=date]{width:160px;}
     </div>
   </div>
   <div id="cantos-results"></div>
+
+  <!-- CANTOS INICIAIS 1-10' -->
+  <div class="panel" style="margin-top:1rem;">
+    <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>⚡ Cantos Iniciais — Primeiros 10 minutos</span>
+      <button class="btn btn-primary btn-sm" onclick="runEarlyCorners()">▶ Escanear</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem;">Score composto: Over 0.5 · Over 1.5 · Primeiro Escanteio Casa — baseado em padrão histórico de início de jogo</div>
+  </div>
+  <div id="early-corners-results"></div>
 </div>
 
 <!-- ═══════════════════════════ WINRATE ═══════════════════════════ -->
@@ -984,6 +994,53 @@ function calcCorners(df,home,away){
   const tot=((pH+cA)/2)+((pA+cH)/2),ht=tot*.45;
   const sf=(thr,l)=>{let c=0;for(let k=0;k<=thr;k++)c+=poissonPMF(k,l);return(1-c)*100;};
   return{expected:tot,probs:{'Over 6.5 FT':sf(6,tot),'Over 7.5 FT':sf(7,tot),'Over 8.5 FT':sf(8,tot),'Over 9.5 FT':sf(9,tot),'Over 2.5 HT':sf(2,ht),'Over 3.5 HT':sf(3,ht),'Over 4.5 HT':sf(4,ht)}};
+}
+
+// ── CANTOS INICIAIS (1-10') ──
+function calcEarlyCorners(df,home,away){
+  const dHHome=df.filter(r=>r.HomeTeam===home);
+  const dAAway=df.filter(r=>r.AwayTeam===away);
+  const dHAway=df.filter(r=>r.AwayTeam===home);
+  const dAHome=df.filter(r=>r.HomeTeam===away);
+  if(!dHHome.length||!dAAway.length)return null;
+
+  const avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0;
+  const t10=a=>a.slice(-10);
+
+  // Taxa de jogos com HC>=1 no 1T como proxy de início agressivo (casa)
+  const htCantosHome=dHHome.map(r=>r.HC||0);
+  const htCantosAway=dAAway.map(r=>r.AC||0);
+  const htCantosHomeSofridos=dHHome.map(r=>r.AC||0);
+  const htCantosAwaySofridos=dAAway.map(r=>r.HC||0);
+
+  // Média de cantos no 1T (proxy: ~45% dos cantos FT são no 1T)
+  const htH=avg(t10(htCantosHome))*0.45;
+  const htA=avg(t10(htCantosAway))*0.45;
+  const htHsof=avg(t10(htCantosHomeSofridos))*0.45;
+  const htAsof=avg(t10(htCantosAwaySofridos))*0.45;
+
+  // Cantos nos primeiros 10' ≈ 22% dos cantos FT (proporcional ao tempo)
+  const c10H=(htH+htHsof)/2*0.22/0.45;
+  const c10A=(htA+htAsof)/2*0.22/0.45;
+  const lambdaTotal=c10H+c10A;
+
+  // Probabilidades usando Poisson
+  const p05=( 1-poissonPMF(0,lambdaTotal))*100;       // Over 0.5 (1+ canto)
+  const p15=( 1-poissonPMF(0,lambdaTotal)-poissonPMF(1,lambdaTotal))*100; // Over 1.5 (2+ cantos)
+
+  // Primeiro escanteio casa: P(casa faz antes) = lambdaH/(lambdaH+lambdaA)
+  const pFEC=lambdaTotal>0?(c10H/lambdaTotal)*p05:0;
+
+  // Score composto (0-100)
+  const score=Math.min(100,(p05*0.5+p15*0.3+pFEC*0.2));
+
+  return{
+    lambda:lambdaTotal,
+    over05:p05,
+    over15:p15,
+    primeiroEscCasa:pFEC,
+    score
+  };
 }
 
 function calcStandings(matches){
@@ -1837,6 +1894,60 @@ async function sendCantosGrade(){
   lastCantosResults.slice(0,5).forEach(r=>{msg+=`⚽ *${r.game}* (${r.hora})\n📊 Exp FT: ${r.expected.toFixed(1)} | ${r.linha}: *${r.prob.toFixed(1)}%*\n\n`;});
   msg+='🦅 *Mestre dos Greens PRO*';
   const ok=await sendTelegram(msg);alert(ok?'✅ Enviado!':'❌ Configure Token Telegram.');
+}
+
+function runEarlyCorners(){
+  const el=document.getElementById('early-corners-results');
+  el.innerHTML=`<div class="empty"><div class="spinner" style="width:26px;height:26px"></div></div>`;
+  setTimeout(()=>{
+    const results=[];
+    for(const row of DF_TODAY){
+      const ec=calcEarlyCorners(DF,row.HomeTeam,row.AwayTeam);
+      if(!ec||ec.lambda<0.1)continue;
+      results.push({
+        game:`${row.HomeTeam} x ${row.AwayTeam}`,
+        hora:row.Hora,league:row.League,
+        ...ec
+      });
+    }
+    results.sort((a,b)=>b.score-a.score);
+    if(!results.length){
+      el.innerHTML=`<div class="empty"><div class="empty-icon">⚡</div><div>Sem dados suficientes para análise de cantos iniciais hoje.</div></div>`;
+      return;
+    }
+    el.innerHTML=results.map(r=>{
+      const sc=r.score;
+      const cor=sc>=55?'var(--green)':sc>=40?'var(--amber)':'var(--text3)';
+      const borda=sc>=55?'rgba(57,255,120,.3)':sc>=40?'rgba(255,208,0,.3)':'var(--border)';
+      const badge=(v,label,thr1,thr2)=>{
+        const c=v>=thr1?'var(--green)':v>=thr2?'var(--amber)':'var(--text3)';
+        return`<div style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;text-align:center;">
+          <div style="font-size:9px;color:var(--text3);letter-spacing:.08em;font-family:'JetBrains Mono',monospace;margin-bottom:4px;">${label}</div>
+          <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:18px;color:${c}">${v.toFixed(1)}%</div>
+        </div>`;
+      };
+      return`<div class="panel" style="margin-bottom:8px;border-color:${borda};">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-weight:600;font-size:14px;">⚡ ${r.game}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;">${r.league} · ⏰ ${r.hora}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:2px;">SCORE COMPOSTO</div>
+            <div style="font-family:'Orbitron',monospace;font-weight:800;font-size:22px;color:${cor}">${sc.toFixed(1)}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          ${badge(r.over05,'⚡ OVER 0.5 (1-10\')',60,45)}
+          ${badge(r.over15,'🔥 OVER 1.5 (1-10\')',35,22)}
+          ${badge(r.primeiroEscCasa,'🏠 1º ESC. CASA',45,30)}
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">
+          λ esperado 1-10\': ${r.lambda.toFixed(2)} cantos
+        </div>
+      </div>`;
+    }).join('');
+  },30);
 }
 
 // ═══════════════════════════════════════════════════════════════════

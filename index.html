@@ -672,6 +672,7 @@ input[type=date]{width:160px;}
         <select id="corner-line" style="width:160px;">
           <option>Over 6.5 FT</option><option selected>Over 7.5 FT</option>
           <option>Over 8.5 FT</option><option>Over 9.5 FT</option>
+          <option>Under 9.5 FT</option>
           <option>Over 2.5 HT</option><option>Over 3.5 HT</option><option>Over 4.5 HT</option>
         </select>
       </div>
@@ -978,22 +979,88 @@ function calcHybrid(df,league,home,away){
   };
 }
 
+// ── CALIBRAÇÃO DE CANTOS POR LIGA ──
+const CORNER_LEAGUE_AVG={
+  'Inglaterra Premier':10.1,'Alemanha Bundesliga 1':10.3,'Italia Serie A':9.8,
+  'Espanha La Liga':9.5,'Franca Ligue 1':9.2,'Portugueses Primeira':9.0,
+  'Portugal Primeira':9.0,'Holanda Eredivisie':9.8,'Brasileirao Serie A':9.2,
+  'Alemanha Bundesliga 2':10.0,'Italia Serie B':9.6,'Espanha La Liga 2':9.3,
+  'Belgica Pro League':9.7,'Turquia Super Lig':9.6,'Russia Premier League':9.1,
+  'Arabia Saudita':9.0,'Grecia Super League':9.2,'Coreia K-League':9.0,
+  'Japao J1 League':9.3,'Mexico Liga MX':9.1,'Argentina Primera':8.9,
+  'Colombia Primera':8.8,'Uruguay Primera':8.7,'Croacia HNL':9.0,
+  'Dinamarca Superliga':9.4,'Noruega Eliteserien':9.1,'Sweden Allsvenskan':9.2,
+  'Finlandia':8.9,'Portugal 2 Liga':9.1,'USA MLS':9.3,
+};
+const CORNER_HT_RATIO={
+  'Inglaterra Premier':.48,'Alemanha Bundesliga 1':.47,'Italia Serie A':.46,
+  'Espanha La Liga':.46,'Brasileirao Serie A':.43,
+};
+const DEFAULT_CORNER_AVG=9.5;
+const DEFAULT_HT_RATIO=0.45;
+
+function getLeagueCornerAvg(league){return CORNER_LEAGUE_AVG[league]||DEFAULT_CORNER_AVG;}
+function getLeagueHTRatio(league){return CORNER_HT_RATIO[league]||DEFAULT_HT_RATIO;}
+
 function calcCorners(df,home,away){
-  const dHA=df.filter(r=>r.HomeTeam===home||r.AwayTeam===home);
-  const dAA=df.filter(r=>r.HomeTeam===away||r.AwayTeam===away);
-  const dHV=df.filter(r=>r.HomeTeam===home),dAV=df.filter(r=>r.AwayTeam===away);
-  if(!dHV.length||!dAV.length)return{expected:0,probs:{}};
-  const proH=dHA.map(r=>r.HomeTeam===home?r.HC:r.AC),conH=dHA.map(r=>r.HomeTeam===home?r.AC:r.HC);
-  const proA=dAA.map(r=>r.HomeTeam===away?r.HC:r.AC),conA=dAA.map(r=>r.HomeTeam===away?r.AC:r.HC);
+  const MIN_GAMES=10;
+  const dHV=df.filter(r=>r.HomeTeam===home);
+  const dAV=df.filter(r=>r.AwayTeam===away);
+
+  // Filtro de amostra mínima
+  if(dHV.length<MIN_GAMES||dAV.length<MIN_GAMES)return{expected:0,probs:{},lowSample:true};
+
   const avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0;
   const t5=a=>a.slice(-5);
-  const pH=avg(proH)*.3+mean(dHV,'HC')*.4+avg(t5(proH))*.3;
-  const cA=avg(conA)*.3+mean(dAV,'HC')*.4+avg(t5(conA))*.3;
-  const pA=avg(proA)*.3+mean(dAV,'AC')*.4+avg(t5(proA))*.3;
-  const cH=avg(conH)*.3+mean(dHV,'AC')*.4+avg(t5(conH))*.3;
-  const tot=((pH+cA)/2)+((pA+cH)/2),ht=tot*.45;
+  const t10=a=>a.slice(-10);
+
+  // Cantos pró e contra — casa jogando em casa
+  const proH_all=dHV.map(r=>r.HC||0);
+  const conH_all=dHV.map(r=>r.AC||0);
+  // Cantos pró e contra — visitante jogando fora
+  const proA_all=dAV.map(r=>r.AC||0);
+  const conA_all=dAV.map(r=>r.HC||0);
+
+  // Blend inteligente: 60% últimos 10 + 40% últimos 5
+  const blend=(arr)=>avg(t10(arr))*.6+avg(t5(arr))*.4;
+
+  const pH=blend(proH_all);   // cantos pró da casa
+  const cA=blend(conA_all);   // cantos cedidos pelo visitante (= pró da casa)
+  const pA=blend(proA_all);   // cantos pró do visitante
+  const cH=blend(conH_all);   // cantos cedidos pela casa (= pró do visitante)
+
+  // Média ponderada: 55% mando + 45% confronto
+  const expHome=(pH*.55+cA*.45);
+  const expAway=(pA*.55+cH*.45);
+  let tot=expHome+expAway;
+
+  // Calibração por liga — ancora a média na distribuição real da liga
+  const league=getLeague(home);
+  const ligaAvg=getLeagueCornerAvg(league);
+  // Calibra suavemente: 70% modelo + 30% média da liga
+  tot=tot*.70+ligaAvg*.30;
+
+  const htRatio=getLeagueHTRatio(league);
+  const ht=tot*htRatio;
+
   const sf=(thr,l)=>{let c=0;for(let k=0;k<=thr;k++)c+=poissonPMF(k,l);return(1-c)*100;};
-  return{expected:tot,probs:{'Over 6.5 FT':sf(6,tot),'Over 7.5 FT':sf(7,tot),'Over 8.5 FT':sf(8,tot),'Over 9.5 FT':sf(9,tot),'Over 2.5 HT':sf(2,ht),'Over 3.5 HT':sf(3,ht),'Over 4.5 HT':sf(4,ht)}};
+
+  return{
+    expected:tot,
+    expectedHT:ht,
+    league,
+    lowSample:false,
+    probs:{
+      'Over 6.5 FT':sf(6,tot),
+      'Over 7.5 FT':sf(7,tot),
+      'Over 8.5 FT':sf(8,tot),
+      'Over 9.5 FT':sf(9,tot),
+      'Under 9.5 FT':(100-sf(9,tot)),
+      'Over 2.5 HT':sf(2,ht),
+      'Over 3.5 HT':sf(3,ht),
+      'Over 4.5 HT':sf(4,ht),
+    }
+  };
 }
 
 // ── CANTOS INICIAIS (1-10') ──
@@ -1866,24 +1933,34 @@ function runCantos(){
       const data=calcCorners(DF,row.HomeTeam,row.AwayTeam);
       if(!data.expected)continue;
       const prob=data.probs[linha]||0;
-      lastCantosResults.push({game:`${row.HomeTeam} x ${row.AwayTeam}`,hora:row.Hora,league:row.League,expected:data.expected,prob,probs:data.probs,linha});
+      // Threshold mínimo por mercado
+      const thresholds={'Over 6.5 FT':50,'Over 7.5 FT':60,'Over 8.5 FT':60,'Over 9.5 FT':55,'Under 9.5 FT':55,'Over 2.5 HT':55,'Over 3.5 HT':60,'Over 4.5 HT':55};
+      const minThreshold=thresholds[linha]||55;
+      if(prob<minThreshold)continue;
+      lastCantosResults.push({game:`${row.HomeTeam} x ${row.AwayTeam}`,hora:row.Hora,league:row.League,expected:data.expected,expectedHT:data.expectedHT,prob,probs:data.probs,linha,lowSample:data.lowSample});
     }
     lastCantosResults.sort((a,b)=>b.prob-a.prob);
     if(lastCantosResults.length)document.getElementById('btn-send-cantos').style.display='';
     el.innerHTML=lastCantosResults.length?lastCantosResults.map(r=>{
-      const c=r.prob>=60?'var(--green)':r.prob>=45?'var(--amber)':'var(--text3)';
-      return`<div class="panel" style="margin-bottom:8px;border-color:${r.prob>=60?'rgba(44,201,138,.3)':r.prob>=45?'rgba(245,166,35,.3)':'var(--border)'}">
+      const c=r.prob>=70?'var(--green)':r.prob>=60?'var(--amber)':'var(--text3)';
+      return`<div class="panel" style="margin-bottom:8px;border-color:${r.prob>=70?'rgba(57,255,120,.3)':r.prob>=60?'rgba(255,208,0,.3)':'var(--border)'}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div><div style="font-weight:600;font-size:14px">⚽ ${r.game}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${r.league} · ⏰ ${r.hora}</div></div>
-          <div style="text-align:right"><div style="font-family:'Orbitron',monospace;font-weight:800;font-size:22px;color:${c}">${r.prob.toFixed(1)}%</div><div style="font-size:10px;color:${c}">${r.linha}</div></div>
+          <div>
+            <div style="font-weight:600;font-size:14px">⚽ ${r.game}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${r.league} · ⏰ ${r.hora}${r.lowSample?' · <span style="color:var(--amber)">⚠️ amostra baixa</span>':''}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Orbitron',monospace;font-weight:800;font-size:22px;color:${c}">${r.prob.toFixed(1)}%</div>
+            <div style="font-size:10px;color:${c}">${r.linha}</div>
+          </div>
         </div>
         <div style="display:flex;gap:20px;margin-top:10px;font-size:12px">
           <span>🚩 Exp FT: <b style="font-family:'JetBrains Mono',monospace">${r.expected.toFixed(1)}</b></span>
-          <span>⚡ Proj HT: <b style="font-family:'JetBrains Mono',monospace">${(r.expected*.45).toFixed(1)}</b></span>
+          <span>⚡ Proj HT: <b style="font-family:'JetBrains Mono',monospace">${(r.expectedHT||r.expected*.45).toFixed(1)}</b></span>
         </div>
-        <div style="margin-top:8px">${Object.entries(r.probs).map(([k,v])=>`<span class="cpill" style="color:${v>=60?'var(--green)':'var(--text2)'};border:${k===r.linha?'1px solid var(--amber)':'none'}">${k}: ${v.toFixed(0)}%</span>`).join('')}</div>
+        <div style="margin-top:8px">${Object.entries(r.probs).map(([k,v])=>`<span class="cpill" style="color:${v>=70?'var(--green)':v>=60?'var(--amber)':'var(--text2)'};border:${k===r.linha?'1px solid var(--amber)':'none'}">${k}: ${v.toFixed(0)}%</span>`).join('')}</div>
       </div>`;
-    }).join(''):`<div class="empty"><div class="empty-icon">🚩</div><div>Nenhum jogo com alta probabilidade para ${linha} hoje.</div></div>`;
+    }).join(''):`<div class="empty"><div class="empty-icon">🚩</div><div>Nenhum jogo com probabilidade ≥60% para ${linha} hoje.</div></div>`;
   },30);
 }
 
@@ -3089,13 +3166,13 @@ async function liveRun(){
         pressao_home:liveStat(f,'Pressure',0)||liveStat(f,'Attacks',0),
         pressao_away:liveStat(f,'Pressure',1)||liveStat(f,'Attacks',1),
         tem_stats:(f.statistics?.length||0)>0
-      })).filter(j=>j.home&&j.away&&j.tem_stats);
-      // Mostra contagem total e com stats
-      const total=fixtures.filter(f=>f.teams?.home?.name).length;
-      const comStats=jogos.length;
+      })).filter(j=>j.home&&j.away);
+      // Separa jogos com e sem stats
+      const comStats=jogos.filter(j=>j.tem_stats).length;
+      const total=jogos.length;
       document.getElementById('live-status-text').textContent=
-        comStats?`Monitorando ${comStats} jogos com stats (${total} ao vivo no total)`
-               :`Nenhum jogo com stats disponíveis (${total} ao vivo sem dados)`;
+        total?`Monitorando ${total} jogos (${comStats} com stats completas)`
+             :`Nenhum jogo ao vivo no momento`;
       liveProcessarJogos(jogos);
     }
   }catch(e){
@@ -3144,8 +3221,8 @@ function liveProcessarJogos(jogos){
               golft:'<span style="font-size:9px;background:rgba(0,229,255,.15);color:var(--teal);padding:1px 5px;border-radius:8px;border:1px solid rgba(0,229,255,.3);">⚽FT</span>',
               cantoft:'<span style="font-size:9px;background:rgba(191,95,255,.15);color:var(--purple);padding:1px 5px;border-radius:8px;border:1px solid rgba(191,95,255,.3);">🚩FT</span>',
             }[k])).join(' ');
-            return`<tr style="border-bottom:1px solid var(--border);">
-              <td style="padding:8px;"><div style="font-weight:500;white-space:nowrap;">${j.home} x ${j.away}</div><div style="font-size:10px;color:var(--text3);">${j.liga}</div></td>
+            return`<tr style="border-bottom:1px solid var(--border);${!j.tem_stats?'opacity:.7':''}">
+              <td style="padding:8px;"><div style="font-weight:500;white-space:nowrap;">${j.home} x ${j.away}${!j.tem_stats?'<span style="font-size:9px;color:var(--text3);margin-left:4px;">(sem stats)</span>':''}</div><div style="font-size:10px;color:var(--text3);">${j.liga}</div></td>
               <td style="text-align:center;padding:8px;"><span style="font-family:'Orbitron',monospace;font-size:13px;color:${min>=80?'var(--red)':min>=45?'var(--amber)':'var(--green)'};">${min}'</span><div style="font-size:9px;color:var(--text3);">${j.periodo}</div></td>
               <td style="text-align:center;padding:8px;font-family:'Orbitron',monospace;font-weight:700;font-size:15px;color:var(--accent);">${j.placar_home}-${j.placar_away}</td>
               <td style="text-align:center;padding:8px;color:var(--text2);font-family:'JetBrains Mono',monospace;">${j.chutes_alvo_home+j.chutes_alvo_away}</td>

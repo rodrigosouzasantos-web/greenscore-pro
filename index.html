@@ -2393,13 +2393,68 @@ function iaRenderAlert(el,title,content,type='info'){
   const colors={info:'var(--accent)',warn:'var(--amber)',alert:'var(--red)',ok:'var(--green)'};
   const icons={info:'🤖',warn:'⚠️',alert:'🚨',ok:'✅'};
   const col=colors[type]||colors.info;
+
+  // Parse seções por emojis em cards separados
+  const sectionEmojis=['🏆','🪤','📈','🌐','🔥','📊','🚨','✅','🎯','💡','📉','🔍','⚠️','📋','🎪','🔑'];
+  const lines=content.split('\n');
+  const sections=[];
+  let current=null;
+
+  lines.forEach(line=>{
+    const hasEmoji=sectionEmojis.some(e=>line.trim().startsWith(e));
+    if(hasEmoji){
+      if(current)sections.push(current);
+      current={title:line.trim(),body:[]};
+    }else if(current){
+      if(line.trim())current.body.push(line);
+    }else{
+      if(!sections.length)sections.push({title:'',body:[line]});
+      else sections[0].body.push(line);
+    }
+  });
+  if(current)sections.push(current);
+
+  // Se não encontrou seções, renderiza como texto simples
+  if(sections.length<=1){
+    document.getElementById(el).innerHTML=`
+      <div class="panel" style="border-color:${col};border-width:1.5px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <span style="font-size:20px">${icons[type]}</span>
+          <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:15px;color:${col}">${title}</div>
+        </div>
+        <div style="font-size:13px;line-height:1.7;color:var(--text2);">${content.replace(/\n/g,'<br/>')}</div>
+      </div>`;
+    return;
+  }
+
+  // Renderiza em cards
+  const cardColors={
+    '🏆':'rgba(57,255,120','🔥':'rgba(57,255,120','✅':'rgba(57,255,120',
+    '🪤':'rgba(255,69,96','🚨':'rgba(255,69,96',
+    '⚠️':'rgba(255,208,0','📈':'rgba(255,208,0','📉':'rgba(255,208,0',
+    '🌐':'rgba(0,229,255','🔍':'rgba(0,229,255',
+    '📊':'rgba(191,95,255','🎯':'rgba(191,95,255','💡':'rgba(191,95,255',
+    '📋':'rgba(57,255,120','🎪':'rgba(255,208,0','🔑':'rgba(0,229,255',
+  };
+
+  const getColor=t=>{
+    for(const[e,c]of Object.entries(cardColors)){if(t.startsWith(e))return c;}
+    return'rgba(57,255,120';
+  };
+
   document.getElementById(el).innerHTML=`
-    <div class="panel" style="border-color:${col};border-width:1.5px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-        <span style="font-size:20px">${icons[type]}</span>
-        <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:15px;color:${col}">${title}</div>
-      </div>
-      <div style="font-size:13px;line-height:1.7;color:var(--text2);">${content.replace(/\n/g,'<br/>')}</div>
+    <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:18px">${icons[type]}</span>
+      <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:14px;color:${col}">${title}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:.75rem;">
+      ${sections.filter(s=>s.title||s.body.length).map(s=>{
+        const c=getColor(s.title);
+        return`<div class="panel" style="border-color:${c},.3);background:${c},.04);margin-bottom:0;">
+          ${s.title?`<div style="font-weight:700;font-size:13px;color:${c},.9);margin-bottom:8px;font-family:'JetBrains Mono',monospace;">${s.title}</div>`:''}
+          <div style="font-size:12px;line-height:1.7;color:var(--text2);">${s.body.join('<br/>')}</div>
+        </div>`;
+      }).join('')}
     </div>`;
 }
 
@@ -2787,7 +2842,7 @@ async function iaScannerGrade(){
     return `${l}: ${tr.trend} (1ªMetade: ${tr.firstHalf.avgG} gols/j → Recente: ${tr.lastHalf.avgG} gols/j)`;
   }).filter(Boolean);
 
-  // Jogos sem dados — pede web search
+  // Jogos sem dados — pede web search com liga correta do CSV
   const webList=semDados.length?semDados.map(r=>`${r.Hora} ${r.HomeTeam} x ${r.AwayTeam} (${r.League||'liga desconhecida'})`).join('\n'):'';
 
   const prompt=`Você é um analista especialista em apostas esportivas com acesso à web.
@@ -2802,7 +2857,7 @@ ${trendLigas.join('\n')||'Dados insuficientes'}
 
 ${webList?`JOGOS SEM DADOS NA BASE (${semDados.length} jogos) — USE WEB SEARCH para cada um:
 ${webList}
-Para cada jogo sem dados, busque: últimos 5 resultados de cada time, média de gols, se é mata-mata e o resultado do jogo anterior.`:''}
+Para cada jogo sem dados: busque a competição CORRETA (pode ser Liga Europa, Conference League, Copa Nacional, etc — não assuma que é a liga nacional), últimos 5 resultados de cada time, média de gols e o resultado do jogo anterior.`:''}
 
 Forneça análise completa em português:
 1. 🏆 TOP 5 OPORTUNIDADES: Jogos com padrões mais confiáveis — cite time, horário, mercado e JUSTIFICATIVA (inclua tendência e pressão)
@@ -2816,15 +2871,7 @@ Máximo 500 palavras. Seja específico com nomes e horários.`;
 
   try{
     const resp=await callClaude(prompt,semDados.length>0);
-    resultEl.innerHTML=`
-      <div class="panel" style="border-color:var(--green);border-width:1.5px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-          <span style="font-size:20px">🔍</span>
-          <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:15px;">Scanner da Grade — Análise Completa</div>
-          ${semDados.length?`<span style="font-size:10px;background:rgba(57,255,120,.15);color:var(--accent);padding:2px 8px;border-radius:10px;">🌐 ${semDados.length} jogos via Web Search</span>`:''}
-        </div>
-        <div style="font-size:13px;line-height:1.8;color:var(--text2);">${resp.replace(/\n/g,'<br/>')}</div>
-      </div>`;
+    iaRenderAlert('ia-result-scanner',`🔍 Scanner da Grade — ${new Date().toLocaleDateString('pt-BR')}`,resp,semDados.length?'warn':'ok');
   }catch(e){
     iaRenderAlert('ia-result-scanner','Erro no Scanner',e.message,'alert');
   }

@@ -2393,69 +2393,24 @@ function iaRenderAlert(el,title,content,type='info'){
   const colors={info:'var(--accent)',warn:'var(--amber)',alert:'var(--red)',ok:'var(--green)'};
   const icons={info:'🤖',warn:'⚠️',alert:'🚨',ok:'✅'};
   const col=colors[type]||colors.info;
-
-  // Parse seções por emojis em cards separados
-  const sectionEmojis=['🏆','🪤','📈','🌐','🔥','📊','🚨','✅','🎯','💡','📉','🔍','⚠️','📋','🎪','🔑'];
+  const cardColors={'🏆':'rgba(57,255,120','🔥':'rgba(57,255,120','✅':'rgba(57,255,120','🪤':'rgba(255,69,96','🚨':'rgba(255,69,96','⚠️':'rgba(255,208,0','📈':'rgba(255,208,0','📉':'rgba(255,208,0','🌐':'rgba(0,229,255','🔍':'rgba(0,229,255','📊':'rgba(191,95,255','🎯':'rgba(191,95,255','💡':'rgba(191,95,255','📋':'rgba(57,255,120','🎪':'rgba(255,208,0','🔑':'rgba(0,229,255'};
+  const getColor=t=>{for(const[e,c]of Object.entries(cardColors)){if(t.includes(e))return c;}return'rgba(57,255,120';};
+  const fmt=s=>s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>');
+  const sectionEmojis=['🏆','🪤','📈','🌐','🔥','📊','🎯','💡','📉','🔍','⚠️','📋','🎪','🔑','🚨','✅'];
+  const isHeader=l=>{const t=l.trim();if(sectionEmojis.some(e=>t.startsWith(e)))return true;if(/^\*\*\d+[.:]/. test(t))return true;return false;};
   const lines=content.split('\n');
-  const sections=[];
-  let current=null;
-
+  const sections=[];let current=null;
   lines.forEach(line=>{
-    const hasEmoji=sectionEmojis.some(e=>line.trim().startsWith(e));
-    if(hasEmoji){
-      if(current)sections.push(current);
-      current={title:line.trim(),body:[]};
-    }else if(current){
-      if(line.trim())current.body.push(line);
-    }else{
-      if(!sections.length)sections.push({title:'',body:[line]});
-      else sections[0].body.push(line);
-    }
+    if(isHeader(line)){if(current)sections.push(current);const ct=line.trim().replace(/^\*\*(.+?)\*\*:?\s*$/,'$1').trim();current={title:ct,body:[]};}
+    else if(current){if(line.trim())current.body.push(line);}
+    else{if(!sections.length&&line.trim())sections.push({title:'',body:[line]});else if(sections.length)sections[sections.length-1].body.push(line);}
   });
   if(current)sections.push(current);
-
-  // Se não encontrou seções, renderiza como texto simples
-  if(sections.length<=1){
-    document.getElementById(el).innerHTML=`
-      <div class="panel" style="border-color:${col};border-width:1.5px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-          <span style="font-size:20px">${icons[type]}</span>
-          <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:15px;color:${col}">${title}</div>
-        </div>
-        <div style="font-size:13px;line-height:1.7;color:var(--text2);">${content.replace(/\n/g,'<br/>')}</div>
-      </div>`;
+  if(sections.length<=1&&(!sections[0]||!sections[0].title)){
+    document.getElementById(el).innerHTML=`<div class="panel" style="border-color:${col};border-width:1.5px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><span style="font-size:20px">${icons[type]}</span><div style="font-family:'Orbitron',monospace;font-weight:700;font-size:15px;color:${col}">${title}</div></div><div style="font-size:13px;line-height:1.7;color:var(--text2);">${fmt(content.replace(/\n/g,'<br/>'))}</div></div>`;
     return;
   }
-
-  // Renderiza em cards
-  const cardColors={
-    '🏆':'rgba(57,255,120','🔥':'rgba(57,255,120','✅':'rgba(57,255,120',
-    '🪤':'rgba(255,69,96','🚨':'rgba(255,69,96',
-    '⚠️':'rgba(255,208,0','📈':'rgba(255,208,0','📉':'rgba(255,208,0',
-    '🌐':'rgba(0,229,255','🔍':'rgba(0,229,255',
-    '📊':'rgba(191,95,255','🎯':'rgba(191,95,255','💡':'rgba(191,95,255',
-    '📋':'rgba(57,255,120','🎪':'rgba(255,208,0','🔑':'rgba(0,229,255',
-  };
-
-  const getColor=t=>{
-    for(const[e,c]of Object.entries(cardColors)){if(t.startsWith(e))return c;}
-    return'rgba(57,255,120';
-  };
-
-  document.getElementById(el).innerHTML=`
-    <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">
-      <span style="font-size:18px">${icons[type]}</span>
-      <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:14px;color:${col}">${title}</div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:.75rem;">
-      ${sections.filter(s=>s.title||s.body.length).map(s=>{
-        const c=getColor(s.title);
-        return`<div class="panel" style="border-color:${c},.3);background:${c},.04);margin-bottom:0;">
-          ${s.title?`<div style="font-weight:700;font-size:13px;color:${c},.9);margin-bottom:8px;font-family:'JetBrains Mono',monospace;">${s.title}</div>`:''}
-          <div style="font-size:12px;line-height:1.7;color:var(--text2);">${s.body.join('<br/>')}</div>
-        </div>`;
-      }).join('')}
-    </div>`;
+  document.getElementById(el).innerHTML=`<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="font-size:18px">${icons[type]}</span><div style="font-family:'Orbitron',monospace;font-weight:700;font-size:14px;color:${col}">${title}</div></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.75rem;">${sections.filter(s=>s.title||s.body.length).map(s=>{const c=getColor(s.title);return`<div class="panel" style="border-color:${c},.35);background:${c},.05);margin-bottom:0;">${s.title?`<div style="font-weight:700;font-size:12px;color:${c},.95);margin-bottom:8px;font-family:'JetBrains Mono',monospace;">${fmt(s.title)}</div>`:''}<div style="font-size:12px;line-height:1.7;color:var(--text2);">${s.body.map(l=>fmt(l)).join('<br/>')}</div></div>`;}).join('')}</div>`;
 }
 
 // Detecta se é jogo de mata-mata (Champions, Copa, etc)

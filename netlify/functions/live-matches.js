@@ -7,15 +7,32 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Origin': '*',
   };
 
-  // API-Football via api-sports.io
+  // API-Football via api-sports.io — inclui estatísticas inline
   if (rapidKey) {
     try {
-      const res = await fetch('https://v3.football.api-sports.io/fixtures?live=all', {
+      const res = await fetch('https://v3.football.api-sports.io/fixtures?live=all&statistics=true', {
         headers: {
           'x-apisports-key': rapidKey
         }
       });
       const data = await res.json();
+
+      // Se a API não retornou stats inline, busca separado para os primeiros 10 jogos
+      const fixtures = data.response || [];
+      const semStats = fixtures.filter(f => !f.statistics?.length);
+
+      if (semStats.length > 0 && semStats.length <= 15) {
+        await Promise.all(semStats.slice(0, 10).map(async f => {
+          try {
+            const sr = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${f.fixture.id}`, {
+              headers: { 'x-apisports-key': rapidKey }
+            });
+            const sd = await sr.json();
+            if (sd.response?.length) f.statistics = sd.response;
+          } catch {}
+        }));
+      }
+
       return { statusCode: 200, headers: corsHeaders, body: JSON.stringify(data) };
     } catch (e) {
       return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: e.message }) };

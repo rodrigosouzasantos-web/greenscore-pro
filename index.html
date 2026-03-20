@@ -1661,9 +1661,13 @@ function loadDetail(i){
         </div>
       </div>
       ${probs?`
-      <div class="grid-2" style="gap:6px;margin-bottom:12px">
+      <div class="grid-2" style="gap:6px;margin-bottom:8px">
         <div class="mcard"><div class="mcard-label">xG Casa</div><div class="mcard-value" style="color:var(--accent)">${probs.xgH.toFixed(2)}</div></div>
         <div class="mcard"><div class="mcard-label">xG Fora</div><div class="mcard-value" style="color:var(--red)">${probs.xgA.toFixed(2)}</div></div>
+      </div>
+      <div class="grid-3" style="gap:6px;margin-bottom:12px">
+        <div class="mcard"><div class="mcard-label">xG FT</div><div class="mcard-value" style="color:var(--amber)">${(probs.xgH+probs.xgA).toFixed(2)}</div></div>
+        ${(()=>{const c=calcCorners(DF,row.HomeTeam,row.AwayTeam);return c.expected?`<div class="mcard"><div class="mcard-label">Cantos HT</div><div class="mcard-value" style="color:var(--teal)">${(c.expectedHT||c.expected*.45).toFixed(1)}</div></div><div class="mcard"><div class="mcard-label">Cantos FT</div><div class="mcard-value" style="color:var(--purple)">${c.expected.toFixed(1)}</div></div>`:`<div class="mcard"><div class="mcard-label">Cantos HT</div><div class="mcard-value" style="color:var(--text3)">—</div></div><div class="mcard"><div class="mcard-label">Cantos FT</div><div class="mcard-value" style="color:var(--text3)">—</div></div>`;})()}
       </div>
       ${[
         {label:'⚡ Over 0.5 HT',v:probs.Over05HT,t:.80},

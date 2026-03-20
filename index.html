@@ -3164,14 +3164,14 @@ async function liveRun(){
         chutes_alvo_away:liveStat(f,'Shots on Goal',1),
         chutes_travados_home:liveStat(f,'Blocked Shots',0),
         chutes_travados_away:liveStat(f,'Blocked Shots',1),
-        ataques_perigosos_home:liveStat(f,'Dangerous Attacks',0)||liveStat(f,'Dangerous attacks',0)||liveStat(f,'Attacks',0),
-        ataques_perigosos_away:liveStat(f,'Dangerous Attacks',1)||liveStat(f,'Dangerous attacks',1)||liveStat(f,'Attacks',1),
+        ataques_perigosos_home:liveStat(f,'Total Shots',0),
+        ataques_perigosos_away:liveStat(f,'Total Shots',1),
         posse_home:liveStatPct(f,'Ball Possession',0),
         posse_away:liveStatPct(f,'Ball Possession',1),
         cantos_home:liveStat(f,'Corner Kicks',0),
         cantos_away:liveStat(f,'Corner Kicks',1),
-        pressao_home:liveStat(f,'Pressure',0)||liveStat(f,'Attacks',0),
-        pressao_away:liveStat(f,'Pressure',1)||liveStat(f,'Attacks',1),
+        xg_home:liveStatFloat(f,'expected_goals',0),
+        xg_away:liveStatFloat(f,'expected_goals',1),
         tem_stats:(f.statistics?.length||0)>0
       })).filter(j=>j.home&&j.away);
       // Separa jogos com e sem stats
@@ -3202,6 +3202,11 @@ function liveStat(f,name,teamIdx){
   const s=stats.find(x=>x.type===name);
   return parseInt(s?.value)||0;
 }
+function liveStatFloat(f,name,teamIdx){
+  const stats=f.statistics?.[teamIdx]?.statistics||[];
+  const s=stats.find(x=>x.type===name);
+  return parseFloat(s?.value)||0;
+}
 function liveStatDebug(f){
   const stats=f.statistics?.[0]?.statistics||[];
   if(stats.length)console.log('Stats disponíveis:',stats.map(s=>s.type).join(', '));
@@ -3219,7 +3224,7 @@ function liveProcessarJogos(jogos){
     <div style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
         <thead><tr>
-          ${['JOGO','MIN','PLACAR','CHT.ALV','CHT.TRV','AT.PERIG','POSSE','CANTOS','ALERTAS'].map(h=>`<th style="text-align:${h==='JOGO'?'left':'center'};padding:6px 8px;color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;border-bottom:1px solid var(--border2);">${h}</th>`).join('')}
+          ${['JOGO','MIN','PLACAR','CHT.ALV','CHT.TRV','TOT.CHT','POSSE','CANTOS','xG','ALERTAS'].map(h=>`<th style="text-align:${h==='JOGO'?'left':'center'};padding:6px 8px;color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;border-bottom:1px solid var(--border2);">${h}</th>`).join('')}
         </tr></thead>
         <tbody>
           ${jogos.map(j=>{
@@ -3238,9 +3243,10 @@ function liveProcessarJogos(jogos){
               <td style="text-align:center;padding:8px;font-family:'Orbitron',monospace;font-weight:700;font-size:15px;color:var(--accent);">${j.placar_home}-${j.placar_away}</td>
               <td style="text-align:center;padding:8px;color:var(--text2);font-family:'JetBrains Mono',monospace;">${j.chutes_alvo_home+j.chutes_alvo_away}</td>
               <td style="text-align:center;padding:8px;color:${(j.chutes_travados_home+j.chutes_travados_away)>=2?'var(--amber)':'var(--text2)'};font-family:'JetBrains Mono',monospace;">${j.chutes_travados_home+j.chutes_travados_away}</td>
-              <td style="text-align:center;padding:8px;color:${(j.ataques_perigosos_home+j.ataques_perigosos_away)>=60?'var(--amber)':'var(--text2)'};font-family:'JetBrains Mono',monospace;">${j.ataques_perigosos_home+j.ataques_perigosos_away}</td>
+              <td style="text-align:center;padding:8px;color:${(j.ataques_perigosos_home+j.ataques_perigosos_away)>=15?'var(--amber)':'var(--text2)'};font-family:'JetBrains Mono',monospace;">${j.ataques_perigosos_home+j.ataques_perigosos_away}</td>
               <td style="text-align:center;padding:8px;font-size:11px;color:var(--text2);">${j.posse_home}%/${j.posse_away}%</td>
               <td style="text-align:center;padding:8px;color:${tc>=9?'var(--amber)':'var(--text2)'};font-family:'JetBrains Mono',monospace;">${tc}</td>
+              <td style="text-align:center;padding:8px;color:${(j.xg_home+j.xg_away)>=1.5?'var(--green)':'var(--text2)'};font-family:'JetBrains Mono',monospace;font-size:11px;">${(j.xg_home+j.xg_away).toFixed(2)}</td>
               <td style="text-align:center;padding:8px;">${badges||'—'}</td>
             </tr>`;
           }).join('')}
@@ -3256,21 +3262,25 @@ function liveChecks(j){
   const min=j.minuto||0;
   const tc=j.cantos_home+j.cantos_away;
   const totalGols=(j.placar_home||0)+(j.placar_away||0);
-  const appm_home=min>0?j.ataques_perigosos_home/min:0;
-  const appm_away=min>0?j.ataques_perigosos_away/min:0;
-  const appm=Math.max(appm_home,appm_away);
+  // Total Shots por minuto (substitui APPM)
+  const tspm_home=min>0?j.ataques_perigosos_home/min:0;
+  const tspm_away=min>0?j.ataques_perigosos_away/min:0;
+  const tspm=Math.max(tspm_home,tspm_away);
   const chutes_alvo=j.chutes_alvo_home+j.chutes_alvo_away;
   const chutes_trav=j.chutes_travados_home+j.chutes_travados_away;
+  const tot_chutes=j.ataques_perigosos_home+j.ataques_perigosos_away;
   const posse_max=Math.max(j.posse_home,j.posse_away);
+  const xg_total=(j.xg_home||0)+(j.xg_away||0);
 
   // 1. GOL HT (Over 0.5 HT) — 20-45'
   const golht=(()=>{
     if(min<20||min>45)return false;
     if(j.periodo==='HT'||j.periodo==='PAUSED')return false;
     let score=0;
-    if(appm>=1.0)score++;
-    if(chutes_alvo>=2)score++;
-    if(appm>=1.5)score++; // bônus APPM muito alto
+    if(chutes_alvo>=3)score++;           // 3+ chutes no alvo
+    if(tot_chutes>=10)score++;           // 10+ chutes totais
+    if(xg_total>=0.5)score++;           // xG acumulado já alto
+    if(tspm>=0.3)score++;               // ritmo de chutes alto
     return score>=2;
   })();
 
@@ -3280,7 +3290,7 @@ function liveChecks(j){
     let score=0;
     if(tc>=3)score++;
     if(chutes_trav>=2)score++;
-    if(appm>=0.8)score++;
+    if(tot_chutes>=8)score++;
     return score>=2;
   })();
 
@@ -3288,10 +3298,11 @@ function liveChecks(j){
   const golft=(()=>{
     if(min<70)return false;
     let score=0;
-    if(appm>=1.2)score++;
-    if(chutes_alvo>=2)score++;
-    if(posse_max>=65)score++;
-    if(chutes_trav>=2)score++; // bônus
+    if(chutes_alvo>=2)score++;           // chutes no alvo recentes
+    if(posse_max>=60)score++;            // dominância de posse
+    if(chutes_trav>=2)score++;           // defesa rebatendo
+    if(xg_total>=1.0)score++;           // xG já alto no jogo
+    if(tot_chutes>=20)score++;           // volume alto de chutes
     return score>=3;
   })();
 
@@ -3300,9 +3311,9 @@ function liveChecks(j){
     if(min<80)return false;
     let score=0;
     if(chutes_trav>=2)score++;
-    if((j.ataques_perigosos_home+j.ataques_perigosos_away)>=60)score++;
-    if(posse_max>=65)score++;
-    if(appm>=1.2)score++;
+    if(tot_chutes>=20)score++;
+    if(posse_max>=60)score++;
+    if(tc>=7)score++;                    // já tem muitos cantos no jogo
     return score>=3;
   })();
 
@@ -3321,17 +3332,17 @@ async function liveDispararAlertas(j){
     golht:{
       id:'golht',cor:'rgba(57,255,120',corVar:'--green',
       titulo:'⚽ GOL HT',mercado:'Over 0.5 HT',
-      resumo:`${min}' | APPM: ${appm.toFixed(2)} | Chutes no alvo: ${j.chutes_alvo_home+j.chutes_alvo_away}`
+      resumo:`${min}' | Chutes alvo: ${j.chutes_alvo_home+j.chutes_alvo_away} | Total chutes: ${j.ataques_perigosos_home+j.ataques_perigosos_away} | xG: ${((j.xg_home||0)+(j.xg_away||0)).toFixed(2)}`
     },
     cantoht:{
       id:'cantoht',cor:'rgba(255,208,0',corVar:'--amber',
       titulo:'🚩 CANTO HT',mercado:'Canto Limite HT',
-      resumo:`${min}' | Cantos: ${tc} | Chutes trav.: ${j.chutes_travados_home+j.chutes_travados_away}`
+      resumo:`${min}' | Cantos: ${tc} | Chutes trav.: ${j.chutes_travados_home+j.chutes_travados_away} | Total chutes: ${j.ataques_perigosos_home+j.ataques_perigosos_away}`
     },
     golft:{
       id:'golft',cor:'rgba(0,229,255',corVar:'--teal',
       titulo:'⚽ GOL FT',mercado:'Gol Limite FT',
-      resumo:`${min}' | APPM: ${appm.toFixed(2)} | Posse máx: ${Math.max(j.posse_home,j.posse_away)}%`
+      resumo:`${min}' | Chutes alvo: ${j.chutes_alvo_home+j.chutes_alvo_away} | Posse máx: ${Math.max(j.posse_home,j.posse_away)}% | xG: ${((j.xg_home||0)+(j.xg_away||0)).toFixed(2)}`
     },
     cantoft:{
       id:'cantoft',cor:'rgba(191,95,255',corVar:'--purple',

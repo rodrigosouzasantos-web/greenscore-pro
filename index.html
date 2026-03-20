@@ -68,7 +68,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 /* ═══ LOGO ═══ */
 .logo-area{display:flex;align-items:center;gap:12px;flex-shrink:0;}
-.logo-img{width:36px;height:36px;border-radius:8px;object-fit:cover;
+.logo-img{width:42px;height:42px;border-radius:8px;object-fit:cover;
   filter:drop-shadow(0 0 8px rgba(57,255,120,.6));
   border:1px solid rgba(57,255,120,.3);}
 .logo-text{display:flex;flex-direction:column;line-height:1;}
@@ -112,7 +112,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   border-bottom:1px solid var(--border);
   margin-bottom:.75rem;
 }
-.sidebar-logo-img{width:42px;height:42px;border-radius:10px;object-fit:cover;
+.sidebar-logo-img{width:52px;height:52px;border-radius:10px;object-fit:cover;
   filter:drop-shadow(0 0 10px rgba(57,255,120,.7));
   border:1px solid rgba(57,255,120,.35);}
 .sidebar-logo-text .s-name{font-family:'Orbitron',monospace;font-weight:700;font-size:11px;
@@ -371,9 +371,9 @@ input[type=date]{width:160px;}
     <img src="https://raw.githubusercontent.com/rodrigosouzasantos-web/greenscore-pro/refs/heads/main/logo.png"
          onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'"
          class="logo-img" alt="Logo"/>
-    <div id="logo-fallback" style="display:none;width:36px;height:36px;border-radius:8px;background:rgba(57,255,120,.1);border:1px solid rgba(57,255,120,.3);align-items:center;justify-content:center;font-size:18px;">🦅</div>
+    <div id="logo-fallback" style="display:none;width:42px;height:42px;border-radius:8px;background:rgba(57,255,120,.1);border:1px solid rgba(57,255,120,.3);align-items:center;justify-content:center;font-size:20px;">🦅</div>
     <div class="logo-text">
-      <span class="logo-name">MESTRE DOS GREENS</span>
+      <span class="logo-name">GREENSCORE PRO</span>
       <span class="logo-sub">MOTOR V72 · PRÉ-JOGO</span>
     </div>
     <span class="badge-pro">PRO</span>
@@ -404,8 +404,8 @@ input[type=date]{width:160px;}
          onerror="this.style.display='none'"
          class="sidebar-logo-img" alt="Logo"/>
     <div class="sidebar-logo-text">
-      <div class="s-name">MESTRE DOS GREENS</div>
-      <div class="s-version">V72.0 · BOT PRO</div>
+      <div class="s-name">GREENSCORE PRO</div>
+      <div class="s-version">V72.0 · PRO</div>
     </div>
   </div>
   <div class="nav-label">// Módulos</div>
@@ -577,7 +577,7 @@ input[type=date]{width:160px;}
 
 <div id="progress-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:70vh;gap:16px;">
   <div style="text-align:center;margin-bottom:8px;">
-    <div style="font-family:'Orbitron',monospace;font-weight:900;font-size:20px;color:var(--accent);text-shadow:0 0 20px rgba(57,255,120,.4);letter-spacing:.05em;">MESTRE DOS GREENS</div>
+    <div style="font-family:'Orbitron',monospace;font-weight:900;font-size:20px;color:var(--accent);text-shadow:0 0 20px rgba(57,255,120,.4);letter-spacing:.05em;">GREENSCORE PRO</div>
     <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.2em;margin-top:4px;">MOTOR V72.0 · INICIALIZANDO...</div>
   </div>
   <div class="spinner" style="width:28px;height:28px;"></div>
@@ -1711,7 +1711,7 @@ async function sendDetail(i){
   const l=getLeague(row.HomeTeam),p=calcHybrid(DF,l,row.HomeTeam,row.AwayTeam);
   if(!p)return alert('Dados insuficientes.');
   const pct=v=>`${(v*100).toFixed(1)}%`,odd=v=>v>0?`@${(1/v).toFixed(2)}`:'--';
-  const msg=`🔥 *ANÁLISE HÍBRIDA*\n⚽ *${row.HomeTeam}* x *${row.AwayTeam}*\n🏆 ${l}\n⏰ ${row.Hora}\n\n📊 *1X2:*\n🏠 Casa: ${pct(p.HomeWin)} ${odd(p.HomeWin)}\n⚖️ Empate: ${pct(p.Draw)}\n✈️ Fora: ${pct(p.AwayWin)} ${odd(p.AwayWin)}\n\n🎯 *Gols:*\n⚡ 0.5 HT: ${pct(p.Over05HT)}\n🛡️ 1.5 FT: ${pct(p.Over15)}\n🔥 2.5 FT: ${pct(p.Over25)}\n🤝 BTTS: ${pct(p.BTTS)}\n🧱 U3.5: ${pct(p.Under35)}\n\n🦅 *Mestre dos Greens PRO*`;
+  const msg=`🔥 *ANÁLISE HÍBRIDA*\n⚽ *${row.HomeTeam}* x *${row.AwayTeam}*\n🏆 ${l}\n⏰ ${row.Hora}\n\n📊 *1X2:*\n🏠 Casa: ${pct(p.HomeWin)} ${odd(p.HomeWin)}\n⚖️ Empate: ${pct(p.Draw)}\n✈️ Fora: ${pct(p.AwayWin)} ${odd(p.AwayWin)}\n\n🎯 *Gols:*\n⚡ 0.5 HT: ${pct(p.Over05HT)}\n🛡️ 1.5 FT: ${pct(p.Over15)}\n🔥 2.5 FT: ${pct(p.Over25)}\n🤝 BTTS: ${pct(p.BTTS)}\n🧱 U3.5: ${pct(p.Under35)}\n\n🦅 *GreenScore PRO*`;
   const ok=await sendTelegram(msg);alert(ok?'✅ Enviado!':'❌ Configure Token Telegram no topo.');
 }
 
@@ -1881,7 +1881,7 @@ async function sendMotorAnalysis(home,away,l){
   const p=calcHybrid(DF,l,home,away);
   if(!p)return alert('Dados insuficientes.');
   const pct=v=>`${(v*100).toFixed(1)}%`,odd=v=>v>0?`@${(1/v).toFixed(2)}`:'--';
-  const msg=`🧮 *MOTOR V72* (Forma+H2H+Liga+Filtro)\n⚽ *${home}* x *${away}*\n🏆 ${l}\n${p.h2hN>=3?`🔄 H2H: ${p.h2hN} jogos\n`:''}\n📊 *1X2:*\n🏠 Casa: ${pct(p.HomeWin)} ${odd(p.HomeWin)}\n⚖️ Empate: ${pct(p.Draw)}\n✈️ Fora: ${pct(p.AwayWin)} ${odd(p.AwayWin)}\n\n🎯 *Gols:*\n⚡ 0.5 HT: ${pct(p.Over05HT)}\n🔥 2.5 FT: ${pct(p.Over25)}\n🤝 BTTS: ${pct(p.BTTS)}\n🧱 U3.5: ${pct(p.Under35)}\n\n🦅 *Mestre dos Greens PRO v72*`;
+  const msg=`🧮 *MOTOR V72* (Forma+H2H+Liga+Filtro)\n⚽ *${home}* x *${away}*\n🏆 ${l}\n${p.h2hN>=3?`🔄 H2H: ${p.h2hN} jogos\n`:''}\n📊 *1X2:*\n🏠 Casa: ${pct(p.HomeWin)} ${odd(p.HomeWin)}\n⚖️ Empate: ${pct(p.Draw)}\n✈️ Fora: ${pct(p.AwayWin)} ${odd(p.AwayWin)}\n\n🎯 *Gols:*\n⚡ 0.5 HT: ${pct(p.Over05HT)}\n🔥 2.5 FT: ${pct(p.Over25)}\n🤝 BTTS: ${pct(p.BTTS)}\n🧱 U3.5: ${pct(p.Under35)}\n\n🦅 *GreenScore PRO v72*`;
   const ok=await sendTelegram(msg);alert(ok?'✅ Enviado!':'❌ Configure Token Telegram.');
 }
 
@@ -1969,7 +1969,7 @@ async function sendCantosGrade(){
   const linha=document.getElementById('corner-line').value;
   let msg=`🚩 *GRADE DE CANTOS — ${linha}*\n\n`;
   lastCantosResults.slice(0,5).forEach(r=>{msg+=`⚽ *${r.game}* (${r.hora})\n📊 Exp FT: ${r.expected.toFixed(1)} | ${r.linha}: *${r.prob.toFixed(1)}%*\n\n`;});
-  msg+='🦅 *Mestre dos Greens PRO*';
+  msg+='🦅 *GreenScore PRO*';
   const ok=await sendTelegram(msg);alert(ok?'✅ Enviado!':'❌ Configure Token Telegram.');
 }
 
@@ -2226,7 +2226,7 @@ function gerarCiclo(){
 async function sendCiclo(){
   if(!lastCiclo)return;
   const{s1,s2}=lastCiclo;
-  const msg=`🚀 *CICLO DE ALAVANCAGEM*\n\n1️⃣ *PASSO 1* (Odd ~@${s1.odd.toFixed(2)})\n⚽ ${s1.game} — ${s1.hora}\n🎯 ${s1.market}\n\n2️⃣ *PASSO 2* (Odd ~@${s2.odd.toFixed(2)})\n⚽ ${s2.game} — ${s2.hora}\n🎯 ${s2.market}\n\n💰 Objetivo: dobrar a stake!\n🦅 *Mestre dos Greens PRO*`;
+  const msg=`🚀 *CICLO DE ALAVANCAGEM*\n\n1️⃣ *PASSO 1* (Odd ~@${s1.odd.toFixed(2)})\n⚽ ${s1.game} — ${s1.hora}\n🎯 ${s1.market}\n\n2️⃣ *PASSO 2* (Odd ~@${s2.odd.toFixed(2)})\n⚽ ${s2.game} — ${s2.hora}\n🎯 ${s2.market}\n\n💰 Objetivo: dobrar a stake!\n🦅 *GreenScore PRO*`;
   const ok=await sendTelegram(msg);alert(ok?'✅ Enviado!':'❌ Configure Token Telegram.');
 }
 
@@ -2271,7 +2271,7 @@ async function sendBilhete(i,tipo){
   const odd=items.reduce((p,x)=>p*x.odd,1);
   let msg=`🎫 *${tipo==='dupla'?'DUPLA SEGURA':'TRIPLA DE VALOR'}* — Odd @${odd.toFixed(2)}\n\n`;
   items.forEach((it,j)=>{msg+=`${j+1}️⃣ ${it.game}\n🎯 ${it.market} (@${it.odd.toFixed(2)})\n\n`;});
-  msg+='🦅 *Mestre dos Greens PRO*';
+  msg+='🦅 *GreenScore PRO*';
   const ok=await sendTelegram(msg);alert(ok?'✅ Enviado!':'❌ Configure Token Telegram.');
 }
 
@@ -2430,7 +2430,7 @@ async function sendFav(i){
   const fav=FAVS[i];const l=getLeague(fav.home);const p=calcHybrid(DF,l,fav.home,fav.away);
   if(!p)return alert('Dados insuficientes.');
   const pct=v=>`${(v*100).toFixed(1)}%`,odd=v=>v>0?`@${(1/v).toFixed(2)}`:'--';
-  const msg=`⭐ *FAVORITO*\n⚽ *${fav.home}* x *${fav.away}*\n🏆 ${l}\n\n📊 *1X2:*\n🏠 ${pct(p.HomeWin)} ${odd(p.HomeWin)}\n⚖️ ${pct(p.Draw)}\n✈️ ${pct(p.AwayWin)} ${odd(p.AwayWin)}\n\n🎯 *Gols:*\n⚡ 0.5 HT: ${pct(p.Over05HT)}\n🔥 2.5 FT: ${pct(p.Over25)}\n🤝 BTTS: ${pct(p.BTTS)}\n\n🦅 *Mestre dos Greens PRO*`;
+  const msg=`⭐ *FAVORITO*\n⚽ *${fav.home}* x *${fav.away}*\n🏆 ${l}\n\n📊 *1X2:*\n🏠 ${pct(p.HomeWin)} ${odd(p.HomeWin)}\n⚖️ ${pct(p.Draw)}\n✈️ ${pct(p.AwayWin)} ${odd(p.AwayWin)}\n\n🎯 *Gols:*\n⚡ 0.5 HT: ${pct(p.Over05HT)}\n🔥 2.5 FT: ${pct(p.Over25)}\n🤝 BTTS: ${pct(p.BTTS)}\n\n🦅 *GreenScore PRO*`;
   const ok=await sendTelegram(msg);alert(ok?'✅ Enviado!':'❌ Configure Token Telegram.');
 }
 
@@ -2610,7 +2610,7 @@ async function callClaude(prompt, useWebSearch=false){
           'Content-Type':'application/json',
           'Authorization':`Bearer ${key}`,
           'HTTP-Referer':'https://mestre-dos-greens.vercel.app',
-          'X-Title':'Mestre dos Greens PRO'
+          'X-Title':'GreenScore PRO'
         },
         body:JSON.stringify({model,max_tokens:1200,temperature:0.4,messages:[{role:'user',content:finalPrompt}]})
       });

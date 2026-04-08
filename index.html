@@ -417,6 +417,7 @@ input[type=date]{width:160px;}
   <button class="nav-item" onclick="nav('alavancagem');closeMobileSidebar()">🚀 Alavancagem</button>
   <button class="nav-item" onclick="nav('bilhetes');closeMobileSidebar()">🎫 Bilhetes</button>
   <button class="nav-item" onclick="nav('analisador');closeMobileSidebar()">🔎 Analisador Times</button>
+  <button class="nav-item" onclick="nav('scout');closeMobileSidebar()">👤 Scout Jogadores</button>
   <button class="nav-item" onclick="nav('favoritos');closeMobileSidebar()">⭐ Favoritos <span class="nav-badge" id="badge-favs">0</span></button>
   <button class="nav-item" onclick="nav('ia');closeMobileSidebar()">🤖 Monitor IA</button>
   <button class="nav-item" onclick="nav('aovivo');closeMobileSidebar()" id="nav-aovivo">🔴 Ao Vivo <span class="nav-badge" id="badge-aovivo" style="background:rgba(255,69,96,.15);color:var(--red);border-color:rgba(255,69,96,.3);">OFF</span></button>
@@ -766,6 +767,117 @@ input[type=date]{width:160px;}
   <div id="ana-result"></div>
 </div>
 
+<!-- ═══════════════════════════ SCOUT JOGADORES ═══════════════════════════ -->
+<div id="page-scout" class="page" style="display:none;">
+  <div class="panel" style="margin-bottom:1rem;">
+    <div class="panel-title" style="margin-bottom:12px;">👤 Scout de Jogadores</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div>
+        <span class="slabel">Liga</span>
+        <select id="scout-liga" onchange="scoutLoadLiga()" style="width:220px;">
+          <option value="Inglaterra Premier">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+          <option value="Espanha La Liga">🇪🇸 La Liga</option>
+          <option value="Alemanha Bundesliga 1">🇩🇪 Bundesliga</option>
+          <option value="Italia Serie A">🇮🇹 Serie A</option>
+          <option value="Franca Ligue 1">🇫🇷 Ligue 1</option>
+          <option value="Portugal Primeira">🇵🇹 Liga Portugal</option>
+          <option value="Brasileirao Serie A">🇧🇷 Brasileirão</option>
+        </select>
+      </div>
+      <div id="scout-status" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;"></div>
+    </div>
+  </div>
+
+  <!-- Sub-abas -->
+  <div style="display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap;">
+    <button class="btn btn-primary" id="scout-tab-ranking" onclick="scoutTab('ranking')">📊 Ranking</button>
+    <button class="btn" id="scout-tab-perfil" onclick="scoutTab('perfil')">👤 Perfil do Jogador</button>
+    <button class="btn" id="scout-tab-cartoes" onclick="scoutTab('cartoes')">⚠️ Radar de Cartões</button>
+  </div>
+
+  <!-- ABA: RANKING -->
+  <div id="scout-panel-ranking">
+    <div class="panel" style="margin-bottom:1rem;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div>
+          <span class="slabel">Métrica</span>
+          <select id="scout-metrica" onchange="scoutRenderRanking()" style="width:220px;">
+            <option value="goals_overall">⚽ Gols</option>
+            <option value="assists_overall">🎯 Assistências</option>
+            <option value="shots_on_target_per_90_overall">🔫 Chutes no Alvo/90</option>
+            <option value="shots_total_per_90_overall">🥅 Chutes Totais/90</option>
+            <option value="cards_overall">🟨 Cartões Total</option>
+            <option value="cards_per_90_overall">🟨 Cartões/90</option>
+            <option value="fouls_overall">👊 Faltas Cometidas</option>
+            <option value="fouls_per_90_overall">👊 Faltas/90</option>
+            <option value="tackles_per_90_overall">🦵 Dribles/90</option>
+            <option value="minutes_played_overall">⏱ Minutos Jogados</option>
+          </select>
+        </div>
+        <div>
+          <span class="slabel">Posição</span>
+          <select id="scout-posicao" onchange="scoutRenderRanking()" style="width:160px;">
+            <option value="">Todas</option>
+            <option value="Goalkeeper">Goleiros</option>
+            <option value="Defender">Defensores</option>
+            <option value="Midfielder">Meio-campistas</option>
+            <option value="Forward">Atacantes</option>
+          </select>
+        </div>
+        <div>
+          <span class="slabel">Min. jogos</span>
+          <select id="scout-mingames" onchange="scoutRenderRanking()" style="width:100px;">
+            <option value="5">5+</option>
+            <option value="10" selected>10+</option>
+            <option value="15">15+</option>
+            <option value="20">20+</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="scout-result-ranking"></div>
+  </div>
+
+  <!-- ABA: PERFIL -->
+  <div id="scout-panel-perfil" style="display:none;">
+    <div class="panel" style="margin-bottom:1rem;overflow:visible;">
+      <div style="position:relative;max-width:500px;">
+        <span class="slabel">Buscar jogador</span>
+        <input type="text" id="scout-player-search" placeholder="Digite o nome do jogador..." oninput="scoutFilterPlayers()" onfocus="scoutShowAllPlayers()" onblur="setTimeout(()=>document.getElementById('scout-player-dropdown').style.display='none',200)" style="width:100%;font-size:14px;padding:10px 14px;"/>
+        <div id="scout-player-dropdown" style="display:none;position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-top:4px;z-index:9999;max-height:300px;overflow-y:auto;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.6);"></div>
+      </div>
+    </div>
+    <div id="scout-result-perfil"></div>
+  </div>
+
+  <!-- ABA: RADAR DE CARTÕES -->
+  <div id="scout-panel-cartoes" style="display:none;">
+    <div class="panel" style="margin-bottom:1rem;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div>
+          <span class="slabel">Ordenar por</span>
+          <select id="scout-cartoes-sort" onchange="scoutRenderCartoes()" style="width:200px;">
+            <option value="cards_per_90_overall">Cartões/90 min</option>
+            <option value="cards_overall">Total de cartões</option>
+            <option value="fouls_per_90_overall">Faltas/90 min</option>
+            <option value="fouls_overall">Total de faltas</option>
+          </select>
+        </div>
+        <div>
+          <span class="slabel">Posição</span>
+          <select id="scout-cartoes-pos" onchange="scoutRenderCartoes()" style="width:160px;">
+            <option value="">Todas</option>
+            <option value="Defender">Defensores</option>
+            <option value="Midfielder">Meio-campistas</option>
+            <option value="Forward">Atacantes</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="scout-result-cartoes"></div>
+  </div>
+</div>
+
 <!-- ═══════════════════════════ FAVORITOS ═══════════════════════════ -->
 <div id="page-favoritos" class="page" style="display:none;">
   <div class="panel" style="display:flex;justify-content:space-between;align-items:center;">
@@ -790,6 +902,18 @@ const FLAGS={'Argentina Primera':'🇦🇷','Belgica Pro League':'🇧🇪','Bra
 const HIST={'Argentina Primera':`${RAW}/csv/past-seasons/leagues/Argentina_Primera_Divisi%C3%B3n_2016-2024.csv`,'Belgica Pro League':`${RAW}/csv/past-seasons/leagues/Belgium_Pro_League_2016-2025.csv`,'Brasileirao Serie A':`${RAW}/csv/past-seasons/leagues/Brasileir%C3%A3o_S%C3%A9rie_A_2016-2024.csv`,'Colombia Primera':`${RAW}/csv/past-seasons/leagues/Colombia_Primera_Liga_2016-2024.csv`,'Croacia HNL':`${RAW}/csv/past-seasons/leagues/Croatia_HNL_2016-2025.csv`,'Dinamarca Superliga':`${RAW}/csv/past-seasons/leagues/Denmark_Superliga_2016-2025.csv`,'Inglaterra Premier':`${RAW}/csv/past-seasons/leagues/England_Premier_League_2016-2025.csv`,'Franca Ligue 1':`${RAW}/csv/past-seasons/leagues/France_Ligue_1_2016-2025.csv`,'Alemanha Bundesliga 1':`${RAW}/csv/past-seasons/leagues/Germany_Bundesliga_2016-2025.csv`,'Alemanha Bundesliga 2':`${RAW}/csv/past-seasons/leagues/Germany_Bundesliga_2_2016-2025.csv`,'Grecia Super League':`${RAW}/csv/past-seasons/leagues/Greece_Super_League_2016-2025.csv`,'Italia Serie A':`${RAW}/csv/past-seasons/leagues/Italy_Serie_A_2016-2025.csv`,'Italia Serie B':`${RAW}/csv/past-seasons/leagues/Italy_Serie_B_2016-2025.csv`,'Japao J1 League':`${RAW}/csv/past-seasons/leagues/Japan_J1_League_2016-2024.csv`,'Portugal 2 Liga':`${RAW}/csv/past-seasons/leagues/LigaPro_Portugal_2a_divisi%C3%B3n_2016-2025.csv`,'Portugal Primeira':`${RAW}/csv/past-seasons/leagues/Liga_Portugal_2016-2025.csv`,'Mexico Liga MX':`${RAW}/csv/past-seasons/leagues/Mexico_Liga_MX_2016-2025.csv`,'Holanda Eredivisie':`${RAW}/csv/past-seasons/leagues/Netherlands_Eredivisie_2016-2025.csv`,'Noruega Eliteserien':`${RAW}/csv/past-seasons/leagues/Norway_Eliteserien_2016-2024.csv`,'Russia Premier League':`${RAW}/csv/past-seasons/leagues/Russian_Premier_League_2016-2025.csv`,'Arabia Saudita':`${RAW}/csv/past-seasons/leagues/Saudi_Pro_League_2016-2025.csv`,'Coreia K-League':`${RAW}/csv/past-seasons/leagues/South_Korea_K_League_1_2016-2024.csv`,'Espanha La Liga':`${RAW}/csv/past-seasons/leagues/Spain_La_Liga_2016-2025.csv`,'Espanha La Liga 2':`${RAW}/csv/past-seasons/leagues/Spain_Segunda_Divisi%C3%B3n_2016-2025.csv`};
 const CURR={'Argentina Primera':`${RAW}/csv/matches/leagues/Argentina_Primera_Divisi%C3%B3n_2025.csv`,'Belgica Pro League':`${RAW}/csv/matches/leagues/Belgium_Pro_League_2025-2026.csv`,'Brasileirao Serie A':`${RAW}/csv/matches/leagues/Brasileir%C3%A3o_S%C3%A9rie_A_2026.csv`,'Colombia Primera':`${RAW}/csv/matches/leagues/Colombia_Primera_Liga_2025.csv`,'Croacia HNL':`${RAW}/csv/matches/leagues/Croatia_HNL_2025-2026.csv`,'Dinamarca Superliga':`${RAW}/csv/matches/leagues/Denmark_Superliga_2025-2026.csv`,'Inglaterra Premier':`${RAW}/csv/matches/leagues/England_Premier_League_2025-2026.csv`,'Finlandia':`${RAW}/csv/matches/leagues/Finland_Veikkausliiga_2025.csv`,'Franca Ligue 1':`${RAW}/csv/matches/leagues/France_Ligue_1_2025-2026.csv`,'Alemanha Bundesliga 1':`${RAW}/csv/matches/leagues/Germany_Bundesliga_2025-2026.csv`,'Alemanha Bundesliga 2':`${RAW}/csv/matches/leagues/Germany_Bundesliga_2_2025-2026.csv`,'Grecia Super League':`${RAW}/csv/matches/leagues/Greece_Super_League_2025-2026.csv`,'Italia Serie A':`${RAW}/csv/matches/leagues/Italy_Serie_A_2025-2026.csv`,'Italia Serie B':`${RAW}/csv/matches/leagues/Italy_Serie_B_2025-2026.csv`,'Japao J1 League':`${RAW}/csv/matches/leagues/Japan_J1_League_2025.csv`,'Portugal 2 Liga':`${RAW}/csv/matches/leagues/LigaPro_Portugal_2a_divisi%C3%B3n_2025-2026.csv`,'Portugal Primeira':`${RAW}/csv/matches/leagues/Liga_Portugal_2025-2026.csv`,'Mexico Liga MX':`${RAW}/csv/matches/leagues/Mexico_Liga_MX_2025-2026.csv`,'Holanda Eredivisie':`${RAW}/csv/matches/leagues/Netherlands_Eredivisie_2025-2026.csv`,'Noruega Eliteserien':`${RAW}/csv/matches/leagues/Norway_Eliteserien_2025.csv`,'Russia Premier League':`${RAW}/csv/matches/leagues/Russian_Premier_League_2025-2026.csv`,'Arabia Saudita':`${RAW}/csv/matches/leagues/Saudi_Pro_League_2025-2026.csv`,'Coreia K-League':`${RAW}/csv/matches/leagues/South_Korea_K_League_1_2025.csv`,'Espanha La Liga':`${RAW}/csv/matches/leagues/Spain_La_Liga_2025-2026.csv`,'Espanha La Liga 2':`${RAW}/csv/matches/leagues/Spain_Segunda_Divisi%C3%B3n_2025-2026.csv`,'Sweden Allsvenskan':`${RAW}/csv/matches/leagues/Sweden_Allsvenskan_2025.csv`,'Turquia Super Lig':`${RAW}/csv/matches/leagues/Turkey_S%C3%BCper_Lig_2025-2026.csv`,'USA MLS':`${RAW}/csv/matches/leagues/USA_Major_League_Soccer_2025.csv`,'Uruguay Primera':`${RAW}/csv/matches/leagues/Uruguay_Primera_Divisi%C3%B3n_2025.csv`};
 const URL_TODAY=`${RAW}/csv/todays_matches/todays_matches.csv`;
+
+// URLs de dados de jogadores por liga
+const PLAYERS_CSV={
+  'Inglaterra Premier':`${RAW}/csv/players/leagues/Players_England_Premier_League_2025-2026.csv`,
+  'Espanha La Liga':`${RAW}/csv/players/leagues/Players_Spain_La_Liga_2025-2026.csv`,
+  'Alemanha Bundesliga 1':`${RAW}/csv/players/leagues/Players_Germany_Bundesliga_2025-2026.csv`,
+  'Italia Serie A':`${RAW}/csv/players/leagues/Players_Italy_Serie_A_2025-2026.csv`,
+  'Franca Ligue 1':`${RAW}/csv/players/leagues/Players_France_Ligue_1_2025-2026.csv`,
+  'Portugal Primeira':`${RAW}/csv/players/leagues/Players_Liga_Portugal_2025-2026.csv`,
+  'Brasileirao Serie A':`${RAW}/csv/players/leagues/Players_Brasileir%C3%A3o_S%C3%A9rie_A_2026.csv`,
+};
+let DF_PLAYERS=[], scoutLigaAtual='';
 
 let DF=[], DF_CURR=[], DF_TODAY=[], FAVS=[], fetchCache={};
 
@@ -1537,6 +1661,7 @@ function nav(page){
   currentPage=page;
   if(page==='favoritos')renderFavs();
   if(page==='alavancagem')renderCicloTable();
+  if(page==='scout')scoutLoadLiga();
 }
 
 function initAll(){
@@ -3515,6 +3640,211 @@ function closeMobileSidebar(){
   document.querySelector('.sidebar').classList.remove('mobile-open');
   document.getElementById('sidebar-overlay').classList.remove('active');
 }
+// ═══════════════════════════════════════════════════════════════════
+// SCOUT DE JOGADORES
+// ═══════════════════════════════════════════════════════════════════
+function scoutTab(tab){
+  ['ranking','perfil','cartoes'].forEach(t=>{
+    document.getElementById(`scout-panel-${t}`).style.display=t===tab?'':'none';
+    document.getElementById(`scout-tab-${t}`).className=t===tab?'btn btn-primary':'btn';
+  });
+  if(tab==='ranking')scoutRenderRanking();
+  if(tab==='cartoes')scoutRenderCartoes();
+}
+
+async function scoutLoadLiga(){
+  const liga=document.getElementById('scout-liga').value;
+  if(liga===scoutLigaAtual&&DF_PLAYERS.length)return;
+  const url=PLAYERS_CSV[liga];
+  if(!url)return;
+  scoutLigaAtual=liga;
+  DF_PLAYERS=[];
+  document.getElementById('scout-status').textContent='Carregando dados...';
+  try{
+    const text=await (await fetch(url)).text();
+    await new Promise(r=>Papa.parse(text,{header:true,skipEmptyLines:true,complete:({data})=>{DF_PLAYERS=data;r();}}));
+    document.getElementById('scout-status').textContent=`✅ ${DF_PLAYERS.length} jogadores carregados`;
+    scoutRenderRanking();
+    scoutRenderCartoes();
+  }catch(e){
+    document.getElementById('scout-status').textContent=`❌ Erro: ${e.message}`;
+  }
+}
+
+function scoutGetNum(p,field){return parseFloat(p[field])||0;}
+
+function scoutRenderRanking(){
+  const el=document.getElementById('scout-result-ranking');
+  if(!DF_PLAYERS.length){el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div>Selecione uma liga para carregar os dados.</div></div>`;return;}
+  const metrica=document.getElementById('scout-metrica').value;
+  const posicao=document.getElementById('scout-posicao').value;
+  const minGames=parseInt(document.getElementById('scout-mingames').value)||10;
+  const metricalabel={'goals_overall':'Gols','assists_overall':'Assistências','shots_on_target_per_90_overall':'Chutes Alvo/90','shots_total_per_90_overall':'Chutes Totais/90','cards_overall':'Cartões','cards_per_90_overall':'Cartões/90','fouls_overall':'Faltas','fouls_per_90_overall':'Faltas/90','tackles_per_90_overall':'Dribles/90','minutes_played_overall':'Minutos'}[metrica]||metrica;
+
+  let players=DF_PLAYERS.filter(p=>scoutGetNum(p,'appearances_overall')>=minGames);
+  if(posicao)players=players.filter(p=>(p.position||'').includes(posicao));
+  players=players.filter(p=>scoutGetNum(p,metrica)>0);
+  players.sort((a,b)=>scoutGetNum(b,metrica)-scoutGetNum(a,metrica));
+  const top=players.slice(0,20);
+  if(!top.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div>Sem dados para esta combinação.</div></div>`;return;}
+  const maxVal=scoutGetNum(top[0],metrica);
+
+  el.innerHTML=`<div class="panel"><div class="panel-title" style="margin-bottom:12px;">Top 20 — ${metricalabel}</div>
+    ${top.map((p,i)=>{
+      const val=scoutGetNum(p,metrica);
+      const pct=maxVal>0?(val/maxVal*100).toFixed(0):0;
+      const cor=i===0?'var(--green)':i<3?'var(--accent)':i<10?'var(--amber)':'var(--text2)';
+      return`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);">
+        <div style="width:22px;text-align:center;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${i+1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.full_name||p.name||'—'}</div>
+          <div style="font-size:10px;color:var(--text3);">${p.team||'—'} · ${p.position||'—'} · ${p.age||'—'} anos</div>
+          <div style="height:3px;background:var(--surface3);border-radius:2px;margin-top:4px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:${cor};border-radius:2px;transition:width .3s;"></div>
+          </div>
+        </div>
+        <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:16px;color:${cor};min-width:50px;text-align:right;">${Number.isInteger(val)?val:val.toFixed(2)}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function scoutShowAllPlayers(){
+  const players=[...new Set(DF_PLAYERS.map(p=>p.full_name||p.name).filter(Boolean))].sort();
+  scoutRenderPlayerDropdown(players);
+}
+
+function scoutFilterPlayers(){
+  const q=document.getElementById('scout-player-search').value.trim().toLowerCase();
+  const players=[...new Set(DF_PLAYERS.map(p=>p.full_name||p.name).filter(Boolean))].sort();
+  const filtered=q?players.filter(n=>n.toLowerCase().includes(q)):players;
+  scoutRenderPlayerDropdown(filtered.slice(0,50));
+}
+
+function scoutRenderPlayerDropdown(players){
+  const dd=document.getElementById('scout-player-dropdown');
+  const input=document.getElementById('scout-player-search');
+  if(!players.length){dd.style.display='none';return;}
+  const rect=input.getBoundingClientRect();
+  dd.style.top=(rect.bottom+4)+'px';
+  dd.style.left=rect.left+'px';
+  dd.style.width=rect.width+'px';
+  dd.style.display='block';
+  dd.innerHTML=players.map(n=>`<div onmousedown="scoutSelectPlayer('${n.replace(/'/g,"\\'")}')" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='transparent'">${n}</div>`).join('');
+}
+
+function scoutSelectPlayer(name){
+  document.getElementById('scout-player-search').value=name;
+  document.getElementById('scout-player-dropdown').style.display='none';
+  scoutRenderPerfil(name);
+}
+
+function scoutRenderPerfil(name){
+  const el=document.getElementById('scout-result-perfil');
+  const p=DF_PLAYERS.find(x=>(x.full_name||x.name)===name);
+  if(!p){el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div>Jogador não encontrado.</div></div>`;return;}
+
+  const n=f=>scoutGetNum(p,f);
+  const pct=f=>{const v=parseFloat(p[f+'_percentile_overall']||p[f])||0;return v;};
+  const bar=(val,max,cor='var(--accent)')=>`<div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${Math.min(100,max>0?val/max*100:val).toFixed(0)}%;background:${cor};border-radius:3px;"></div></div>`;
+
+  const grupos=[
+    {titulo:'⚽ Ataque',cor:'rgba(57,255,120',fields:[
+      {label:'Gols',val:n('goals_overall')},
+      {label:'Assistências',val:n('assists_overall')},
+      {label:'Chutes Alvo/90',val:n('shots_on_target_per_90_overall')},
+      {label:'Chutes Totais/90',val:n('shots_total_per_90_overall')},
+      {label:'xG Total',val:n('xg_overall')||n('expected_goals_overall')},
+    ]},
+    {titulo:'🦵 Físico & Duelos',cor:'rgba(0,229,255',fields:[
+      {label:'Dribles/90',val:n('dribbles_per_90_overall')||n('tackles_per_90_overall')},
+      {label:'Duelos Aéreos Ganhos',val:n('aerial_duels_won_overall')},
+      {label:'Faltas Cometidas',val:n('fouls_overall')},
+      {label:'Faltas Recebidas',val:n('was_fouled_overall')},
+      {label:'Minutos Jogados',val:n('minutes_played_overall')},
+    ]},
+    {titulo:'🟨 Disciplina',cor:'rgba(255,69,96',fields:[
+      {label:'Cartões Total',val:n('cards_overall')},
+      {label:'Cartões/90',val:n('cards_per_90_overall')},
+      {label:'Cartões Amarelos',val:n('yellow_cards_overall')},
+      {label:'Cartões Vermelhos',val:n('red_cards_overall')},
+    ]},
+    {titulo:'📊 Participação',cor:'rgba(191,95,255',fields:[
+      {label:'Jogos',val:n('appearances_overall')},
+      {label:'Titular',val:n('starts_overall')},
+      {label:'Gols+Assistências',val:n('goals_overall')+n('assists_overall')},
+      {label:'G+A/90',val:n('goals_assists_per_90_overall')},
+    ]},
+  ];
+
+  el.innerHTML=`
+    <div class="panel" style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:18px;color:var(--accent);">${p.full_name||p.name}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px;">${p.team||'—'} · ${p.position||'—'} · ${p.age||'—'} anos · ${p.nationality||'—'}</div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-left:auto;">
+          <div style="text-align:center;"><div style="font-size:9px;color:var(--text3);">JOGOS</div><div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--text);">${n('appearances_overall')}</div></div>
+          <div style="text-align:center;"><div style="font-size:9px;color:var(--text3);">GOLS</div><div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--green);">${n('goals_overall')}</div></div>
+          <div style="text-align:center;"><div style="font-size:9px;color:var(--text3);">ASSIST.</div><div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--accent);">${n('assists_overall')}</div></div>
+          <div style="text-align:center;"><div style="font-size:9px;color:var(--text3);">CARTÕES</div><div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--amber);">${n('cards_overall')}</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.75rem;">
+      ${grupos.map(g=>`
+        <div class="panel" style="border-color:${g.cor},.3);background:${g.cor},.04);margin-bottom:0;">
+          <div style="font-weight:700;font-size:12px;color:${g.cor},.9);margin-bottom:10px;font-family:'JetBrains Mono',monospace;">${g.titulo}</div>
+          ${g.fields.filter(f=>f.val>0).map(f=>`
+            <div style="margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                <span style="font-size:11px;color:var(--text2);">${f.label}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:${g.cor},.9);">${Number.isInteger(f.val)?f.val:f.val.toFixed(2)}</span>
+              </div>
+              ${bar(f.val,f.val*2,`${g.cor},.8)`)}
+            </div>`).join('')}
+        </div>`).join('')}
+    </div>`;
+}
+
+function scoutRenderCartoes(){
+  const el=document.getElementById('scout-result-cartoes');
+  if(!DF_PLAYERS.length){el.innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div>Selecione uma liga para carregar os dados.</div></div>`;return;}
+  const sort=document.getElementById('scout-cartoes-sort').value;
+  const pos=document.getElementById('scout-cartoes-pos').value;
+  const sortlabel={'cards_per_90_overall':'Cartões/90','cards_overall':'Total Cartões','fouls_per_90_overall':'Faltas/90','fouls_overall':'Total Faltas'}[sort];
+
+  let players=DF_PLAYERS.filter(p=>scoutGetNum(p,'appearances_overall')>=5&&scoutGetNum(p,sort)>0);
+  if(pos)players=players.filter(p=>(p.position||'').includes(pos));
+  players.sort((a,b)=>scoutGetNum(b,sort)-scoutGetNum(a,sort));
+  const top=players.slice(0,20);
+  if(!top.length){el.innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div>Sem dados disponíveis.</div></div>`;return;}
+
+  el.innerHTML=`<div class="panel"><div class="panel-title" style="margin-bottom:12px;">⚠️ Radar de Cartões — Top 20 por ${sortlabel}</div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr>${['#','Jogador','Time','Pos','Jogos','Cart.','Cart/90','Faltas','Faltas/90'].map(h=>`<th style="padding:6px 8px;text-align:${h==='Jogador'||h==='Time'?'left':'center'};color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:9px;border-bottom:1px solid var(--border2);">${h}</th>`).join('')}</tr></thead>
+      <tbody>${top.map((p,i)=>{
+        const cards=scoutGetNum(p,'cards_overall');
+        const cardsp90=scoutGetNum(p,'cards_per_90_overall');
+        const fouls=scoutGetNum(p,'fouls_overall');
+        const foulsp90=scoutGetNum(p,'fouls_per_90_overall');
+        const risco=cardsp90>=0.4?'var(--red)':cardsp90>=0.2?'var(--amber)':'var(--text2)';
+        return`<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:7px 8px;text-align:center;color:var(--text3);">${i+1}</td>
+          <td style="padding:7px 8px;font-weight:600;">${p.full_name||p.name||'—'}</td>
+          <td style="padding:7px 8px;color:var(--text3);font-size:11px;">${p.team||'—'}</td>
+          <td style="padding:7px 8px;text-align:center;color:var(--text3);font-size:11px;">${(p.position||'').substring(0,3)}</td>
+          <td style="padding:7px 8px;text-align:center;">${scoutGetNum(p,'appearances_overall')}</td>
+          <td style="padding:7px 8px;text-align:center;font-weight:700;color:${risco};">${cards}</td>
+          <td style="padding:7px 8px;text-align:center;color:${risco};font-family:'JetBrains Mono',monospace;">${cardsp90.toFixed(2)}</td>
+          <td style="padding:7px 8px;text-align:center;color:var(--text2);">${fouls}</td>
+          <td style="padding:7px 8px;text-align:center;color:var(--text2);font-family:'JetBrains Mono',monospace;">${foulsp90.toFixed(2)}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div></div>`;
+}
+
 loadAll();
 </script>
 </body>
